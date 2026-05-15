@@ -4,13 +4,20 @@ from datetime import datetime
 
 Base = declarative_base()
 
+class Store(Base):
+    __tablename__ = "stores"
+
+    id = mapped_column(Integer, primary_key=True)
+    name = mapped_column(String, nullable=False)
+
+
 class Product(Base):
     __tablename__ = "products"
 
     id = mapped_column(Integer, primary_key = True)
     name = mapped_column(String, nullable=False)
     sku = mapped_column(String, unique=True)
-    base_unit_id = mapped_column(ForeignKey("units.id"))
+    base_unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
 
 
 class Unit(Base):
@@ -25,8 +32,8 @@ class ProductUnitConversion(Base):
     __tablename__ = "product_unit_conversions"
 
     id = mapped_column(Integer, primary_key=True)
-    product_id = mapped_column(ForeignKey("products.id"))
-    unit_id = mapped_column(ForeignKey("units.id"))
+    product_id = mapped_column(ForeignKey("products.id"), nullable=False)
+    unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
     multiplier_to_base = mapped_column(Numeric(12, 4))
 
 
@@ -40,6 +47,7 @@ class Document(Base): # e.g. GoodsReceived, Dispatch, Stock-Requisition-Form etc
     __tablename__ = "documents"
 
     id = mapped_column(Integer, primary_key=True)
+    store_id = mapped_column(ForeignKey("stores.id"), nullable=False)
     document_type = mapped_column(DocumentType, nullable=False)
     reference_no = mapped_column(String)
     date = mapped_column(Date, nullable=False)
@@ -54,11 +62,11 @@ class DocumentLine(Base):
     __tablename__ = "document_lines"
 
     id = mapped_column(Integer, primary_key=True)
-    document_id = mapped_column(ForeignKey("documents.id"))
-    product_id = mapped_column(ForeignKey("products.id"))
-    entered_qty = mapped_column(Numeric(12, 4))
-    entered_unit_id = mapped_column(ForeignKey("units.id"))
-    base_qty = mapped_column(Numeric(12, 4))
+    document_id = mapped_column(ForeignKey("documents.id"), nullable=False)
+    product_id = mapped_column(ForeignKey("products.id"), nullable=False)
+    entered_quantity = mapped_column(Numeric(12, 4))
+    entered_unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
+    base_quantity = mapped_column(Numeric(12, 4))
 
 
 class MovementType(str, Enum):
@@ -70,9 +78,10 @@ class StockMovement(Base):
     __tablename__ = "inventory_movements"
 
     id = mapped_column(Integer, primary_key=True)
+    store_id = mapped_column(ForeignKey("stores.id"))
     movement_date = mapped_column(Date, nullable=False)
-    product_id = mapped_column(ForeignKey("products.id"))
-    document_line_id = mapped_column(ForeignKey("document_lines.id"))
+    product_id = mapped_column(ForeignKey("products.id"), nullable=False)
+    document_line_id = mapped_column(ForeignKey("document_lines.id"), nullable=False)
     movement_type = mapped_column(MovementType, nullable=False)
     quantity_delta = mapped_column(Numeric(12, 4)) #how much was received / issued in this stock movement e.g. +2pcs biscuit, -10ctns yoghurt
     running_balance = mapped_column(Numeric(12, 4)) #resulting inventory balance (for the corresponding product) after receiving / issuing the qty in this stock movement
@@ -83,6 +92,10 @@ class StockMovement(Base):
 class StockBalance(Base): # a pseudo-cache for the present inventory qty of a product (cached due to its need to be computed on several cases)
     __tablename__ = "stock_balances"
 
+    store_id = mapped_column(
+        ForeignKey("stores.id"),
+        primary_key=True
+    )
     product_id = mapped_column(
         ForeignKey("products.id"),
         primary_key=True
@@ -91,7 +104,7 @@ class StockBalance(Base): # a pseudo-cache for the present inventory qty of a pr
 
 
 
-engine = create_engine(f"sqlite:///./db_file.db")
+engine = create_engine("sqlite:///./db_file.db")
 conn = engine.connect()
 
 make_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
