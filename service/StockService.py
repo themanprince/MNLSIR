@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db import StockMovement, StockBalance
-from datetime import datetime
+from datetime import date
 from decimal import Decimal
 
 
@@ -9,8 +9,9 @@ class StockService:
     def __init__(self, session: Session):
         self.session = session
     
-    def recalculate(self, store_id: int, product_id: int, from_movement_date: datetime):
-                
+    def recalculate(self, store_id: int, product_id: int, from_movement_date: date):
+        #this method helps to recompute the stock movement records of a product in a given store
+        # this is needed after operations that insert new stock movement records, especially the ones that back-date   
         statement = (
             select(StockMovement)
             .where(
