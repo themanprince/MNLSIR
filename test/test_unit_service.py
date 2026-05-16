@@ -1,6 +1,6 @@
 import pytest
 from sqlalchemy.orm import Session
-from conftest import db_session
+from .conftest import db_session
 from service.UnitService import UnitService
 from db import Product, Unit, ProductUnitConversion
 from exceptions import UnitConversionError
