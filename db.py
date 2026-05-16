@@ -1,6 +1,8 @@
 from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column
 from sqlalchemy import create_engine, ForeignKey, Integer, String, Numeric, Enum, Text, Date, DateTime
 from datetime import datetime
+import enum
+
 
 Base = declarative_base()
 
@@ -37,7 +39,7 @@ class ProductUnitConversion(Base):
     multiplier_to_base = mapped_column(Numeric(12, 4))
 
 
-class DocumentType(str, Enum):
+class DocumentType(str, enum.Enum):
     GOODS_RECEIVED = "GOODS_RECEIVED"
     DISPATCH = "DISPATCH"
     STOCK_REQUISITION = "STOCK_REQUISITION"
@@ -48,7 +50,7 @@ class Document(Base): # e.g. GoodsReceived, Dispatch, Stock-Requisition-Form etc
 
     id = mapped_column(Integer, primary_key=True)
     store_id = mapped_column(ForeignKey("stores.id"), nullable=False)
-    document_type = mapped_column(DocumentType, nullable=False)
+    document_type = mapped_column(Enum(DocumentType), nullable=False)
     reference_no = mapped_column(String)
     date = mapped_column(Date, nullable=False)
     source_party = mapped_column(String)
@@ -69,7 +71,7 @@ class DocumentLine(Base):
     base_quantity = mapped_column(Numeric(12, 4))
 
 
-class MovementType(str, Enum):
+class MovementType(str, enum.Enum):
     RECIEVE = "RECEIVE"
     ISSUE = "ISSUE"
     ADJUST = "ADJUST"
@@ -82,7 +84,7 @@ class StockMovement(Base):
     movement_date = mapped_column(Date, nullable=False)
     product_id = mapped_column(ForeignKey("products.id"), nullable=False)
     document_line_id = mapped_column(ForeignKey("document_lines.id"), nullable=False)
-    movement_type = mapped_column(MovementType, nullable=False)
+    movement_type = mapped_column(Enum(MovementType), nullable=False)
     quantity_delta = mapped_column(Numeric(12, 4)) #how much was received / issued in this stock movement e.g. +2pcs biscuit, -10ctns yoghurt
     running_balance = mapped_column(Numeric(12, 4)) #resulting inventory balance (for the corresponding product) after receiving / issuing the qty in this stock movement
     created_at = mapped_column(DateTime, default=datetime.utcnow)
