@@ -105,11 +105,9 @@ class StockBalance(Base): # a pseudo-cache for the present inventory qty of a pr
 
 
 engine = create_engine("sqlite:///./db_file.db")
-conn = engine.connect()
 
 make_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base.metadata.create_all(engine)
 
 def get_session():
     session = make_session()
