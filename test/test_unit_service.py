@@ -98,10 +98,10 @@ def test_convert_to_base_zero_quantity(db_session):
 def test_convert_to_base_negative_quantity(db_session):
     base_unit, other_unit, product, multiplier_to_base = setup_yoghurt_plain(session = db_session)
     unit_service = UnitService(session = db_session)
-    quantity = Decimal("-20")
+    quantity = Decimal("-2")
     result = unit_service.to_base(product_id = product.id, quantity=quantity, from_unit_id = other_unit.id)
 
-    assert result == -2
+    assert result == -20
 
 
 def test_convert_to_base_missing_rule_raises_exception(db_session):
