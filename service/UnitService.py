@@ -12,7 +12,7 @@ class UnitService:
     
     def to_base(self, product_id: int, quantity: Decimal, from_unit_id: int):
         
-        product = self.session.query(Product).filter_by(product_id = product_id).first()
+        product = self.session.query(Product).filter_by(id = product_id).first()
 
         if not product:
             raise UnitConversionError(f"No product with id={product_id}")
