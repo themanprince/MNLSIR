@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column
 from sqlalchemy import create_engine, ForeignKey, Integer, String, Numeric, Enum, Text, Date, DateTime
-from datetime import datetime
+from datetime import datetime, date
 import enum
 
 
@@ -52,7 +52,7 @@ class Document(Base): # e.g. GoodsReceived, Dispatch, Stock-Requisition-Form etc
     store_id = mapped_column(ForeignKey("stores.id"), nullable=False)
     document_type = mapped_column(Enum(DocumentType), nullable=False)
     reference_no = mapped_column(String)
-    date = mapped_column(Date, nullable=False)
+    date = mapped_column(Date, nullable=False, default=date.today)
     source_party = mapped_column(String)
     destination_party = mapped_column(String)
     remarks = mapped_column(Text)
@@ -81,7 +81,7 @@ class StockMovement(Base):
 
     id = mapped_column(Integer, primary_key=True)
     store_id = mapped_column(ForeignKey("stores.id"))
-    movement_date = mapped_column(Date, nullable=False)
+    movement_date = mapped_column(Date, nullable=False, default=date.today)
     product_id = mapped_column(ForeignKey("products.id"), nullable=False)
     document_line_id = mapped_column(ForeignKey("document_lines.id"), nullable=False)
     movement_type = mapped_column(Enum(MovementType), nullable=False)
