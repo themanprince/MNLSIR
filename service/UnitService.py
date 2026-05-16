@@ -12,8 +12,13 @@ class UnitService:
     
     def to_base(self, product_id: int, quantity: Decimal, from_unit_id: int):
         
-        if quantity <= 0:
-            raise UnitConversionError("Quantity must be positive")
+        product = self.session.query(Product).filter_by(product_id = product_id).first()
+
+        if not product:
+            raise UnitConversionError(f"No product with id={product_id}")
+
+        if from_unit_id == product.base_unit_id:
+            return quantity
         
         statement = select(ProductUnitConversion).where(
                 ProductUnitConversion.product_id == product_id,
