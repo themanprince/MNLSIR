@@ -112,8 +112,12 @@ make_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base.metadata.create_all(engine)
 
 def get_session():
-	session = make_session()
-	try:
-		yield session
-	finally:
-		session.close()
+    session = make_session()
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()

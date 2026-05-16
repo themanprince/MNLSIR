@@ -15,6 +15,10 @@ def db_session():
     session = get_testing_session()
     try:
         yield session
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
     finally:
         session.close()
         #drop tables after test to keep clean
