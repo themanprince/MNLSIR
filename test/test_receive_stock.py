@@ -8,6 +8,7 @@ from schema.ReceiveStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
 from db import StockMovement, Document, DocumentLine, DocumentType
 from exceptions import ReceiveStockError
+from pydantic import ValidationError
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -17,15 +18,14 @@ def mock_unit_service(db_session):
     return MagicMock()
 
 @pytest.fixture
-def inventory_service(db_session, mock_unit_service):
+def inventory_service(db_session):
     inventory_service = InventoryService(session = db_session)
-    inventory_service.unit_service = mock_unit_service
     return inventory_service
 
 
 def test_receive_stock_creates_correct_records(db_session, inventory_service):
     
-    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+    store = seed_test_stores(session = db_session, no_of_stores = 1)[0]
 
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session) #yoghurt is the product that will be used for the test
 
@@ -70,7 +70,7 @@ def test_receive_stock_rejects_future_date(db_session, inventory_service):
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session) #in case you don't know, achi is a product.. it is the product that will be used for the test
     future_date = date.today() + timedelta(days=1)
     
-    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+    store = seed_test_stores(session = db_session, no_of_stores = 1)[0]
     
     payload = ReceiveStockRequest(
         store_id = store.id,
@@ -89,22 +89,22 @@ def test_receive_stock_rejects_future_date(db_session, inventory_service):
 def test_receive_stock_raises_error_on_invalid_parameters(db_session, inventory_service):
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session)
     
-    payload = ReceiveStockRequest(
-        store_id = "random stuff", #type:ignore (INSTEAD OF INT, I'M PASSING STR TYPE ON PURPOSE)
-        date = date.today(),
-        source_party = "me",
-        remarks = "because I want to",
-        items = [
-            ReceiveIssueItem(product_id = achi.id, unit_id = achi_other_unit.id, quantity = Decimal("2"))
-        ]
-    )
+    with pytest.raises(ValidationError):    
+        payload = ReceiveStockRequest(
+            store_id = "random stuff", #type:ignore (INSTEAD OF INT, I'M PASSING STR TYPE ON PURPOSE)
+            date = date.today(),
+            source_party = "me",
+            remarks = "because I want to",
+            items = [
+                ReceiveIssueItem(product_id = achi.id, unit_id = achi_other_unit.id, quantity = Decimal("2"))
+            ]
+        )
 
-    with pytest.raises(ReceiveStockError):
         inventory_service.receive_stock(payload)
 
 
 def test_receive_stock_raises_error_on_no_product_to_receive(db_session, inventory_service):
-    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+    store = seed_test_stores(session = db_session, no_of_stores = 1)[0]
     
     payload = ReceiveStockRequest(
         store_id = store.id,
@@ -119,7 +119,7 @@ def test_receive_stock_raises_error_on_no_product_to_receive(db_session, invento
 
 
 def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_service):
-    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+    store = seed_test_stores(session = db_session, no_of_stores = 1)[0]
 
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
 
@@ -138,7 +138,7 @@ def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_s
 
 
 def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_service):
-    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+    store = seed_test_stores(session = db_session, no_of_stores = 1)[0]
 
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
 
@@ -158,7 +158,7 @@ def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_servi
 
 
 def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service, mock_unit_service):
-    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+    store = seed_test_stores(session = db_session, no_of_stores = 1)[0]
 
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session)
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
@@ -169,6 +169,7 @@ def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service
         return quantity
     
     mock_unit_service.to_base.side_effect = side_effect #exception in side_effect should be raised when InventoryService tries to use this mock_unit_service for unit conversion on the specified product
+    inventory_service.unit_service = mock_unit_service
 
     identifying_remarks = "Evaluating Rollback"
     
@@ -183,7 +184,7 @@ def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service
         ]
     )
 
-    with pytest.raises(ReceiveStockError):
+    with pytest.raises(RuntimeError): #as is the error expected to be raised by the side effect
         inventory_service.receive_stock(payload)
     
     # even if the first product was received fine, (having no issues)

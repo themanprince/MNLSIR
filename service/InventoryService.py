@@ -3,6 +3,8 @@ from db import Document, DocumentType, DocumentLine, StockMovement, MovementType
 from schema.ReceiveStockRequest import ReceiveStockRequest
 from service.UnitService import UnitService
 from service.StockService import StockService
+from exceptions import ReceiveStockError
+from datetime import date
 
 
 class InventoryService:
@@ -13,7 +15,21 @@ class InventoryService:
     
 
     def receive_stock(self, payload: ReceiveStockRequest):
-        with self.session.begin(): #transaction
+        if payload.date > date.today():
+            raise ReceiveStockError("Please check date entered. Cannot Receive Stock in the future")
+        
+        if any([item.quantity <= 0 for item in payload.items]):
+            raise ReceiveStockError("Please check quantities of items to Receive. Cannot have zero(0) or -negative quantity")
+
+        if not payload.items:
+            raise ReceiveStockError("No products were specified for receiving. Please specify products/quantities to receive")
+
+        transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
+            self.session.begin_nested()
+            if self.session.in_transaction()
+            else self.session.begin()
+        )
+        with transaction_context: #transaction
             document = Document(
                 document_type = DocumentType.GOODS_RECEIVED,
                 store_id = payload.store_id,
