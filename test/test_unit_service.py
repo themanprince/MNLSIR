@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 from .conftest import db_session
-from .helpers import seed_test_unit, seed_test_product, seed_conversion_rule, setup_achi, setup_yoghurt_plain
+from .helpers import seed_test_unit, setup_achi, setup_yoghurt_plain
 from service.UnitService import UnitService
 from exceptions import UnitConversionError
 from decimal import Decimal
@@ -10,7 +10,7 @@ from decimal import Decimal
 
 def test_convert_to_base_successful(db_session):
     #should correctly convert a standard unit to its base
-    base_unit, other_unit, product, multiplier_to_base = setup_yoghurt_plain(session = db_session)   
+    base_unit, other_unit, product, multiplier_to_base = setup_yoghurt_plain(session = db_session)
     unit_service = UnitService(session = db_session)
 
     quantity = Decimal("3")
