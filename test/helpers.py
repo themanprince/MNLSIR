@@ -1,6 +1,18 @@
 from sqlalchemy.orm import Session
 from decimal import Decimal
-from db import Unit, Product, ProductUnitConversion
+from db import Store, Unit, Product, ProductUnitConversion
+
+
+
+
+def seed_test_stores(session: Session, no_of_stores:int = 1):
+    stores = [Store(name=f"test_store{i}") for i in range(no_of_stores)]
+    session.add_all(stores)
+    session.commit()
+    for store in stores:
+        session.refresh(store)
+    
+    return stores
 
 
 def seed_test_unit(session: Session, name:str, symbol:str):
