@@ -78,6 +78,7 @@ class StockService:
 
         if stock_balance is None:
             stock_balance = StockBalance(
+                store_id = store_id,
                 product_id = product_id,
                 quantity = running_balance
             )
