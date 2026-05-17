@@ -45,6 +45,7 @@ class InventoryService:
                 self.session.flush()
 
                 movement =  StockMovement(
+                    store_id = payload.store_id,
                     product_id = item.product_id,
                     document_line_id = document_line.id,
                     movement_type = MovementType.RECIEVE,

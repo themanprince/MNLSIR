@@ -82,6 +82,6 @@ class StockService:
                 quantity = running_balance
             )
 
-            self.session.add(StockBalance)
+            self.session.add(stock_balance)
         else:
             stock_balance.quantity = running_balance
