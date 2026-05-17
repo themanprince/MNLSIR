@@ -12,7 +12,7 @@ def seed_test_stores(session: Session, no_of_stores:int = 1):
     for store in stores:
         session.refresh(store)
     
-    return stores
+    return stores[0] if no_of_stores == 1 else stores
 
 
 def seed_test_unit(session: Session, name:str, symbol:str):
