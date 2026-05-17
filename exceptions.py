@@ -3,3 +3,6 @@ class UnitConversionError(Exception):
 
 class CreateConversionRuleError(Exception):
     pass
+
+class ReceiveStockError(Exception):
+    pass
