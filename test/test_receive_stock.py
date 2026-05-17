@@ -118,6 +118,45 @@ def test_receive_stock_raises_error_on_no_product_to_receive(db_session, invento
         inventory_service.receive_stock(payload)
 
 
+def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_service):
+    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+
+    yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
+
+    payload = ReceiveStockRequest(
+        store_id = store.id,
+        date = date.today(),
+        source_party = "Prince",
+        remarks="Testing things out",
+        items = [
+            ReceiveIssueItem(product_id = yoghurt.id, unit_id = yoghurt_other_unit.id, quantity = Decimal("-2"))
+        ]
+    )
+
+    with pytest.raises(ReceiveStockError):
+        inventory_service.receive_stock(payload)
+
+
+def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_service):
+    store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
+
+    yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
+
+    payload = ReceiveStockRequest(
+        store_id = store.id,
+        date = date.today(),
+        source_party = "Prince",
+        remarks="Testing things out",
+        items = [
+            ReceiveIssueItem(product_id = yoghurt.id, unit_id = yoghurt_other_unit.id, quantity = Decimal("0"))
+        ]
+    )
+
+    with pytest.raises(ReceiveStockError):
+        inventory_service.receive_stock(payload)
+
+
+
 def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service, mock_unit_service):
     store, _ = seed_test_stores(session = db_session, no_of_stores = 1)
 
