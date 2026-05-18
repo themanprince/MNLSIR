@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Session
 from decimal import Decimal
-from db import Store, Unit, Product, ProductUnitConversion
-
-
+from db import Store, Unit, Product, ProductUnitConversion, Document, DocumentLine, DocumentType
+from datetime import date
 
 
 def seed_test_stores(session: Session, no_of_stores:int = 1):
@@ -12,7 +11,7 @@ def seed_test_stores(session: Session, no_of_stores:int = 1):
     for store in stores:
         session.refresh(store)
     
-    return stores[0] if no_of_stores == 1 else stores
+    return stores
 
 
 def seed_test_unit(session: Session, name:str, symbol:str):
@@ -62,3 +61,28 @@ def setup_achi(session: Session):
     seed_conversion_rule(session = session, product_id = product.id, unit_id=other_unit.id, multiplier_to_base=multiplier_to_base)
 
     return base_unit, other_unit, product, multiplier_to_base
+
+
+def seed_dummy_document_line(session: Session, store_id: int, product_id: int, unit_id: int):
+    doc = Document(
+        document_type = DocumentType.GOODS_RECEIVED,
+        store_id = store_id,
+        date = date.today(),
+        source_party = "Dummy Vendor",
+        remarks = "raw seed for stock service testing"
+    )
+    session.add(doc)
+    session.flush()
+
+    line = DocumentLine(
+        document_id = doc.id,
+        product_id = product_id,
+        entered_quantity = Decimal("0"),
+        entered_unit_id = unit_id,
+        base_quantity = Decimal("0")
+    )
+
+    session.add(line)
+    session.flush()
+
+    return line
