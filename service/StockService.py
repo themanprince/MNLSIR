@@ -71,7 +71,8 @@ class StockService:
         stock_balance = (
             self.session.query(StockBalance)
             .filter(
-                StockBalance.product_id == product_id
+                StockBalance.product_id == product_id,
+                StockBalance.store_id == store_id
             )
             .first()
         )
@@ -84,5 +85,6 @@ class StockService:
             )
 
             self.session.add(stock_balance)
+            self.session.flush()
         else:
             stock_balance.quantity = running_balance
