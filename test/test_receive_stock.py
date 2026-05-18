@@ -25,7 +25,7 @@ def inventory_service(db_session):
 
 def test_receive_stock_creates_correct_records(db_session, inventory_service):
     
-    store = seed_test_stores(session = db_session, no_of_stores = 1)
+    [store] = seed_test_stores(session = db_session, no_of_stores = 1)
 
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session) #yoghurt is the product that will be used for the test
 
@@ -70,7 +70,7 @@ def test_receive_stock_rejects_future_date(db_session, inventory_service):
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session) #in case you don't know, achi is a product.. it is the product that will be used for the test
     future_date = date.today() + timedelta(days=1)
     
-    store = seed_test_stores(session = db_session, no_of_stores = 1)
+    [store] = seed_test_stores(session = db_session, no_of_stores = 1)
     
     payload = ReceiveStockRequest(
         store_id = store.id,
@@ -104,7 +104,7 @@ def test_receive_stock_raises_error_on_invalid_parameters(db_session, inventory_
 
 
 def test_receive_stock_raises_error_on_no_product_to_receive(db_session, inventory_service):
-    store = seed_test_stores(session = db_session, no_of_stores = 1)
+    [store] = seed_test_stores(session = db_session, no_of_stores = 1)
     
     payload = ReceiveStockRequest(
         store_id = store.id,
@@ -119,7 +119,7 @@ def test_receive_stock_raises_error_on_no_product_to_receive(db_session, invento
 
 
 def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_service):
-    store = seed_test_stores(session = db_session, no_of_stores = 1)
+    [store] = seed_test_stores(session = db_session, no_of_stores = 1)
 
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
 
@@ -138,7 +138,7 @@ def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_s
 
 
 def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_service):
-    store = seed_test_stores(session = db_session, no_of_stores = 1)
+    [store] = seed_test_stores(session = db_session, no_of_stores = 1)
 
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
 
@@ -158,7 +158,7 @@ def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_servi
 
 
 def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service, mock_unit_service):
-    store = seed_test_stores(session = db_session, no_of_stores = 1)
+    [store] = seed_test_stores(session = db_session, no_of_stores = 1)
 
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session)
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
