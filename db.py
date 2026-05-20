@@ -108,7 +108,7 @@ class StockBalance(Base): # a pseudo-cache for the present inventory qty of a pr
     quantity = mapped_column(Numeric(12, 4), default=0)
 
 
-class SourceActionType(str, enum.Enum):
+class ActionType(str, enum.Enum):
     IN_PLACE_EDIT = "IN_PLACE_EDIT"
     BALANCE_OVERWRITE_RECONCILE = "BALANCE_OVERWRITE_RECONCILE"
     INITIAL_STOCK_TAKE = "INITIAL_STOCK_TAKE"
@@ -122,7 +122,7 @@ class InterventionLog(Base):
     id = mapped_column(Integer, primary_key = True)
     store_id = mapped_column(Integer, ForeignKey("stores.id"), nullable = False)
     product_id = mapped_column(Integer, ForeignKey("products.id"), nullable = False)
-    source_action_type = mapped_column(Enum(SourceActionType), nullable = False)
+    source_action_type = mapped_column(Enum(ActionType), nullable = False)
     concerned_movement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #the StockMovement row edited, adjusted or created
     old_value_snapshot = mapped_column(Numeric(12, 4), nullable = True) #nullable = True because this could be a fresh inventory taking
     new_value_snapshot = mapped_column(Numeric(12, 4), nullable = False)
