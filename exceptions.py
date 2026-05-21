@@ -9,3 +9,6 @@ class ReceiveStockError(Exception):
 
 class UpdateStockMovementError(Exception):
     pass
+
+class AssociateStockMovementError(Exception):
+    pass
