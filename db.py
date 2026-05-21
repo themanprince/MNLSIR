@@ -74,7 +74,7 @@ class DocumentLine(Base):
 class MovementType(str, enum.Enum):
     RECIEVE = "RECEIVE"
     ISSUE = "ISSUE"
-    ADJUST = "ADJUST" #e.g. when a store keeper wishes to update digital stockbalance to align with physical stock balance, likely due to unexplainable discrepancies
+    STOCKTAKE = "STOCKTAKE" #e.g. when a store keeper wishes to update digital stockbalance to align with physical stock balance, likely due to unexplainable discrepancies
 
 class StockMovement(Base):
     __tablename__ = "stock_movements"
@@ -86,9 +86,9 @@ class StockMovement(Base):
     document_line_id = mapped_column(ForeignKey("document_lines.id"), nullable=False)
     movement_type = mapped_column(Enum(MovementType), nullable=False)
     quantity_delta = mapped_column(Numeric(12, 4)) #how much was received / issued in this stock movement e.g. +2pcs biscuit, -10ctns yoghurt
-    associated_adjusted_stockmovement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #in case this stock movement helps explain another adjusted-StockMovement (i.e. with MovementType.ADJUST), this column serves as a reference to that adjusted-StockMovement
+    associated_adjusted_stockmovement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #in case this stock movement helps explain another (initially inexplainable) adjusted-StockMovement (i.e. rows with movement_type=MovementType.STOCKTAKE), this column serves as a reference to that adjusted-StockMovement
     running_balance = mapped_column(Numeric(12, 4)) #resulting inventory balance (for the corresponding product) after receiving / issuing the qty in this stock movement
-    target_quantity = mapped_column(Numeric(12, 4), nullable = True) #only for MovementType.ADJUST... this column's value should override whatever running_balance was there before it
+    target_quantity = mapped_column(Numeric(12, 4), nullable = True) #only for rows having movement_type=MovementType.STOCKTAKE... this column's value should override whatever running_balance was there before it
 
     created_at = mapped_column(DateTime, default=datetime.utcnow)
     updated_at = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -123,7 +123,7 @@ class InterventionLog(Base):
     store_id = mapped_column(Integer, ForeignKey("stores.id"), nullable = False)
     product_id = mapped_column(Integer, ForeignKey("products.id"), nullable = False)
     source_action_type = mapped_column(Enum(ActionType), nullable = False)
-    concerned_movement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #the StockMovement row edited, adjusted or created
+    concerned_movement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #the StockMovement row that this log was created for i.e. the StockMovement row that is edited, adjusted or created
     old_value_snapshot = mapped_column(Numeric(12, 4), nullable = True) #nullable = True because this could be a fresh inventory taking
     new_value_snapshot = mapped_column(Numeric(12, 4), nullable = False)
     changed_by = mapped_column(String)

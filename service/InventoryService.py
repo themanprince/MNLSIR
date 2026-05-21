@@ -108,7 +108,7 @@ class InventoryService:
             stock_movement = StockMovement(
                 store_id = store_id,
                 product_id = product_id,
-                movement_type = MovementType.ADJUST,
+                movement_type = MovementType.STOCKTAKE,
                 quantity_delta = Decimal("0"), # this is an adjustment stock movement.. the stock balance should be changed to the set target_quantity, and not be calculated based on some quantity_delta
                 target_quantity = target_quantity,
                 movement_date = stocktake_date #explicitly passed, as guard against delayed submissions
@@ -133,6 +133,4 @@ class InventoryService:
             self.session.flush()
 
             self.stock_service.recalculate(store_id=store_id, product_id = product_id, from_movement_date = stocktake_date)
-    
-
     
