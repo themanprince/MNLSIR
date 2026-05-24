@@ -83,7 +83,7 @@ class StockMovement(Base):
     store_id = mapped_column(ForeignKey("stores.id"))
     movement_date = mapped_column(Date, nullable=False, default=date.today)
     product_id = mapped_column(ForeignKey("products.id"), nullable=False)
-    document_line_id = mapped_column(ForeignKey("document_lines.id"), nullable=False)
+    document_line_id = mapped_column(ForeignKey("document_lines.id"))
     movement_type = mapped_column(Enum(MovementType), nullable=False)
     quantity_delta = mapped_column(Numeric(12, 4)) #how much was received / issued in this stock movement e.g. +2pcs biscuit, -10ctns yoghurt
     associated_adjusted_stockmovement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #in case this stock movement helps explain another (initially inexplainable) adjusted-StockMovement (i.e. rows with movement_type=MovementType.STOCKTAKE), this column serves as a reference to that adjusted-StockMovement
