@@ -86,7 +86,8 @@ class StockMovement(Base):
     document_line_id = mapped_column(ForeignKey("document_lines.id"))
     movement_type = mapped_column(Enum(MovementType), nullable=False)
     quantity_delta = mapped_column(Numeric(12, 4)) #how much was received / issued in this stock movement e.g. +2pcs biscuit, -10ctns yoghurt
-    associated_adjusted_stockmovement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #in case this stock movement helps explain another (initially inexplainable) adjusted-StockMovement (i.e. rows with movement_type=MovementType.STOCKTAKE), this column serves as a reference to that adjusted-StockMovement
+    remarks = mapped_column(String)
+    associated_stockmovement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #in case this stock movement helps explain another (initially inexplainable) adjusted-StockMovement (i.e. rows with movement_type=MovementType.STOCKTAKE), this column serves as a reference to that adjusted-StockMovement
     running_balance = mapped_column(Numeric(12, 4)) #resulting inventory balance (for the corresponding product) after receiving / issuing the qty in this stock movement
     target_quantity = mapped_column(Numeric(12, 4), nullable = True) #only for rows having movement_type=MovementType.STOCKTAKE... this column's value should override whatever running_balance was there before it
 
