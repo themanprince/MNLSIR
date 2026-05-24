@@ -133,4 +133,5 @@ class InventoryService:
             self.session.flush()
 
             self.stock_service.recalculate(store_id=store_id, product_id = product_id, from_movement_date = stocktake_date)
-    
+
+            return stock_movement
