@@ -143,26 +143,26 @@ class StockService:
             else self.session.begin()
         )
         with transaction_context:
-            lock_statement_1 = (
+            lock_statement = (  # I'm locking only the explanatory StockMovement (instead of both it and the explained stock take) for two reasons.. 1. it is what is actually going to be modified in this methodd 2. this method may have been called by self.insert_and_link_historical_movement(). Thus, the explained stock_take may have already been locked in that method
                 select(StockMovement)
                 .where(StockMovement.id == movement_id)
                 .with_for_update()
             )
-            lock_statement_2 = (
-                select(StockMovement)
-                .where(StockMovement.id == stocktake_id)
-                .with_for_update()
-            )
-            self.session.execute(lock_statement_1)
-            self.session.execute(lock_statement_2)
+            self.session.execute(lock_statement)
             
             stock_movement = self.session.query(StockMovement).filter_by(id = movement_id).first()
             stock_take = self.session.query(StockMovement).filter_by(id = stocktake_id).first()
 
             if not stock_movement or not stock_take:
-                raise AssociateStockMovementError(f"Invalid Reference --> stock_movement with id={movement_id} or stock_take with id={stocktake_id}")
+                raise AssociateStockMovementError(f"Invalid Reference --> stock_movement with id={movement_id} or stock_take with id={stocktake_id} does not exist")
             
-            stock_movement.associated_adjusted_stockmovement_id = stock_take.id
+            if stock_take.movement_type != MovementType.STOCKTAKE:
+                raise AssociateStockMovementError(f"Target stock movement record with id={stock_take.id} is not really a StockTake i.e. does not have movement_type=STOCKTAKE")
+
+            if stock_movement.movement_date > stock_take.movement_date:
+                raise AssociateStockMovementError(f"Invalid date.. explanatory Stock movement cannot have date later than stock_take to be explained")
+            
+            stock_movement.associated_stockmovement_id = stock_take.id
 
             intervention_log = InterventionLog(
                 store_id = stock_movement.store_id,
@@ -176,3 +176,39 @@ class StockService:
 
             self.session.add(intervention_log)
             self.session.flush()
+    
+
+    def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  operator_name:str, remarks: str) -> StockMovement:
+        # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product
+        # (e.g. my stockmovement records say I should have 43tins of milk, but my physical inventory is 40tins of milk.. I'd have do a StockTake, recording 40tins as my new StockBalance),
+        # since stock takes are usually initially inexplainable,
+        # this method allows for linking stock_movements (discovered later on) that may help to explain a stock take, to that stock take
+        transaction_context = (
+            self.session.begin_nested()
+            if self.session.in_transaction()
+            else self.session.begin()
+        )
+        with transaction_context:
+            lock_statement = (
+                select(StockMovement)
+                .where(StockMovement.id == associated_stocktake_id)
+                .with_for_update()
+            )
+            self.session.execute(lock_statement)
+                        
+            explanatory_stock_movement = StockMovement( #the linking to associated_stocktake_id will not be done in this method but in associate_stock_movement_to_stocktake(), where proper validation will be carried out before linking the stock movement records
+                store_id = store_id,
+                product_id = product_id,
+                movement_type = movement_type,
+                quantity_delta = quantity_delta,
+                movement_date = movement_date,
+            )
+
+            self.session.add(explanatory_stock_movement)
+            self.session.flush()
+
+            self.recalculate(store_id = store_id, product_id = product_id, from_movement_date = movement_date)
+            
+            self.associate_stock_movement_to_stocktake(movement_id = explanatory_stock_movement.id, stocktake_id=associated_stocktake_id, operator_name = operator_name)
+            
+            return explanatory_stock_movement
