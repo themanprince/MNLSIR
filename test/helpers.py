@@ -63,7 +63,7 @@ def setup_achi(session: Session):
     return base_unit, other_unit, product, multiplier_to_base
 
 
-def seed_dummy_document_line(session: Session, store_id: int, product_id: int, unit_id: int):
+def seed_dummy_document_line(session: Session, store_id: int, product_id: int, unit_id: int, entered_quantity: Decimal = Decimal("0"), base_quantity: Decimal = Decimal("0")):
     doc = Document(
         document_type = DocumentType.GOODS_RECEIVED,
         store_id = store_id,
@@ -77,9 +77,9 @@ def seed_dummy_document_line(session: Session, store_id: int, product_id: int, u
     line = DocumentLine(
         document_id = doc.id,
         product_id = product_id,
-        entered_quantity = Decimal("0"),
+        entered_quantity = entered_quantity,
         entered_unit_id = unit_id,
-        base_quantity = Decimal("0")
+        base_quantity = base_quantity
     )
 
     session.add(line)
