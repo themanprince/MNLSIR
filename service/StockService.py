@@ -4,6 +4,7 @@ from db import StockMovement, StockBalance, MovementType, InterventionLog, Actio
 from datetime import date
 from decimal import Decimal
 from exceptions import UpdateStockMovementError, AssociateStockMovementError
+from typing import Optional
 
 
 class StockService:
@@ -178,7 +179,7 @@ class StockService:
             self.session.flush()
     
 
-    def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  operator_name:str, remarks: str) -> StockMovement:
+    def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  operator_name:str, remarks: Optional[str] = None) -> StockMovement:
         # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product
         # (e.g. my stockmovement records say I should have 43tins of milk, but my physical inventory is 40tins of milk.. I'd have do a StockTake, recording 40tins as my new StockBalance),
         # since stock takes are usually initially inexplainable,
@@ -202,6 +203,7 @@ class StockService:
                 movement_type = movement_type,
                 quantity_delta = quantity_delta,
                 movement_date = movement_date,
+                remarks = remarks if remarks else None
             )
 
             self.session.add(explanatory_stock_movement)
