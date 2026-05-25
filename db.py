@@ -1,5 +1,5 @@
 from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column
-from sqlalchemy import create_engine, ForeignKey, Integer, String, Numeric, Enum, Text, Date, DateTime
+from sqlalchemy import create_engine, ForeignKey, CheckConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
 from datetime import datetime, date
 import enum
 
@@ -88,11 +88,22 @@ class StockMovement(Base):
     quantity_delta = mapped_column(Numeric(12, 4)) #how much was received / issued in this stock movement e.g. +2pcs biscuit, -10ctns yoghurt
     remarks = mapped_column(String)
     associated_stockmovement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #in case this stock movement helps explain another (initially inexplainable) adjusted-StockMovement (i.e. rows with movement_type=MovementType.STOCKTAKE), this column serves as a reference to that adjusted-StockMovement
-    running_balance = mapped_column(Numeric(12, 4)) #resulting inventory balance (for the corresponding product) after receiving / issuing the qty in this stock movement
+    running_balance = mapped_column(Numeric(12, 4)) #resulting inventory balance (for the corresponding product) after receiving / issuing the quantity_delta in this stock movement
     target_quantity = mapped_column(Numeric(12, 4), nullable = True) #only for rows having movement_type=MovementType.STOCKTAKE... this column's value should override whatever running_balance was there before it
 
     created_at = mapped_column(DateTime, default=datetime.utcnow)
     updated_at = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        CheckConstraint(
+            """
+                (movement_type = 'RECEIVE' AND quantity_delta > 0) OR
+                (movement_type = 'ISSUE' AND quantity_delta < 0) OR
+                (movment_type = 'STOCKTAKE' AND quantity_delta = 0 and target_quantity >= 0)
+            """,
+            name = "check_movements_delta_sign"
+        ),
+    )
 
 
 class StockBalance(Base): # a pseudo-cache for the present inventory qty of a product (cached due to its need to be computed on several cases)
