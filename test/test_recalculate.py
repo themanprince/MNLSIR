@@ -19,7 +19,7 @@ def test_recalculate_running_balance_accuracy(db_session, stock_service):
     dummy_document_line = seed_dummy_document_line(session=db_session, store_id = store.id, product_id = product.id, unit_id = other_unit.id)
 
     m1 = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.RECIEVE, quantity_delta=Decimal("100"), movement_date=date(2026, 5, 10), created_at=datetime(2026, 5, 10, 10, 0), document_line_id = dummy_document_line.id)
-    m2 = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.RECIEVE, quantity_delta=Decimal("-30"), movement_date=date(2026, 5, 12), created_at=datetime(2026, 5, 12, 10, 0), document_line_id = dummy_document_line.id)
+    m2 = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.ISSUE, quantity_delta=Decimal("-30"), movement_date=date(2026, 5, 12), created_at=datetime(2026, 5, 12, 10, 0), document_line_id = dummy_document_line.id)
     
     db_session.add_all([m1, m2])
     db_session.commit()
