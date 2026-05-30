@@ -121,7 +121,7 @@ class InventoryService:
             intervention_log = InterventionLog(
                 store_id = store_id,
                 product_id = product_id,
-                action_type = action_type,
+                source_action_type = action_type,
                 concerned_movement_id = stock_movement.id,
                 old_value_snapshot = current_quantity,
                 new_value_snapshot = target_quantity,

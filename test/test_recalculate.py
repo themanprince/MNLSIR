@@ -39,7 +39,7 @@ def test_recalculate_handles_back_dated_inserts(db_session, stock_service):
     dummy_document_line = seed_dummy_document_line(session=db_session, store_id = store.id, product_id = product.id, unit_id = other_unit.id)
 
     m1 = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.RECIEVE, quantity_delta=Decimal("50"), movement_date=date(2026, 5, 10), created_at=datetime(2026, 5, 10, 12, 0), document_line_id = dummy_document_line.id)
-    m3 = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.RECIEVE, quantity_delta=Decimal("-20"), movement_date=date(2026, 5, 14), created_at=datetime(2026, 5, 14, 12, 0), document_line_id = dummy_document_line.id)
+    m3 = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.ISSUE, quantity_delta=Decimal("-20"), movement_date=date(2026, 5, 14), created_at=datetime(2026, 5, 14, 12, 0), document_line_id = dummy_document_line.id)
     
     db_session.add_all([m1, m3])
     db_session.commit()
@@ -73,7 +73,7 @@ def test_recalculate_tie_breaker_sorting_same_day(db_session, stock_service):
     target_day = date(2026, 5, 15)
 
     entry_first = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.RECIEVE, quantity_delta=Decimal("10"), movement_date=target_day, created_at=datetime(2026, 5, 15, 8, 0), document_line_id = dummy_document_line.id)
-    entry_second = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.RECIEVE, quantity_delta=Decimal("-3"), movement_date=target_day, created_at=datetime(2026, 5, 15, 12, 0), document_line_id = dummy_document_line.id)
+    entry_second = StockMovement(store_id = store.id, product_id = product.id, movement_type = MovementType.RECIEVE, quantity_delta=Decimal("3"), movement_date=target_day, created_at=datetime(2026, 5, 15, 12, 0), document_line_id = dummy_document_line.id)
 
     db_session.add_all([entry_first, entry_second])
     db_session.commit()
@@ -81,10 +81,10 @@ def test_recalculate_tie_breaker_sorting_same_day(db_session, stock_service):
     stock_service.recalculate(store_id = store.id, product_id=product.id, from_movement_date = target_day)
 
     assert entry_first.running_balance == Decimal("10")
-    assert entry_second.running_balance == Decimal("7")
+    assert entry_second.running_balance == Decimal("13")
 
     balance = db_session.query(StockBalance).filter(StockBalance.store_id == store.id, StockBalance.product_id == product.id).first()
-    assert balance.quantity == Decimal("7")
+    assert balance.quantity == Decimal("13")
 
 
 def test_recalculate_scope_isolation_by_store(db_session, stock_service):

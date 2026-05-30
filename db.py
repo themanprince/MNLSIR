@@ -72,7 +72,7 @@ class DocumentLine(Base):
 
 
 class MovementType(str, enum.Enum):
-    RECIEVE = "RECEIVE"
+    RECIEVE = "RECIEVE"
     ISSUE = "ISSUE"
     STOCKTAKE = "STOCKTAKE" #e.g. when a store keeper wishes to update digital stockbalance to align with physical stock balance, likely due to unexplainable discrepancies
 
@@ -97,9 +97,9 @@ class StockMovement(Base):
     __table_args__ = (
         CheckConstraint(
             """
-                (movement_type = 'RECEIVE' AND quantity_delta > 0) OR
+                (movement_type = 'RECIEVE' AND quantity_delta > 0) OR
                 (movement_type = 'ISSUE' AND quantity_delta < 0) OR
-                (movment_type = 'STOCKTAKE' AND quantity_delta = 0 and target_quantity >= 0)
+                (movement_type = 'STOCKTAKE' AND quantity_delta = 0)
             """,
             name = "check_movements_delta_sign"
         ),

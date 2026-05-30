@@ -40,7 +40,7 @@ def test_doing_stocktake_can_serve_as_baseline_when_no_records_exist(db_session,
 
     stock_movement = db_session.query(StockMovement).filter(StockMovement.store_id == store.id, StockMovement.product_id == yoghurt.id).first()
     assert stock_movement is not None
-    assert stock_movement.movement_date == MovementType.STOCKTAKE
+    assert stock_movement.movement_type == MovementType.STOCKTAKE
     assert stock_movement.target_quantity == quantity
     assert stock_movement.running_balance == quantity
 
@@ -64,34 +64,36 @@ def test_update_historical_stockmovement_recalculates_forward_and_creates_log_FO
     
     document_line1 = seed_dummy_document_line(session = db_session, store_id = store.id, product_id = yoghurt.id, unit_id = base_unit.id)
     quantity_delta1 = wrong_quantity
-    stock_movement1 = StockMovement(date = date(2026, 5, 1), movement_type = MovementType.RECIEVE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line1.id, quantity_delta = quantity_delta1)
+    stock_movement1 = StockMovement(movement_date = date(2026, 5, 1), movement_type = MovementType.RECIEVE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line1.id, quantity_delta = quantity_delta1)
     
     document_line2 = seed_dummy_document_line(session = db_session, store_id = store.id, product_id = yoghurt.id, unit_id = base_unit.id)
-    quantity_delta2 = Decimal("100")
-    stock_movement2 = StockMovement(date = date(2026, 5, 2), movement_type = MovementType.ISSUE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line2.id, quantity_delta = quantity_delta2)
+    quantity_delta2 = Decimal("-20")
+    stock_movement2 = StockMovement(movement_date = date(2026, 5, 2), movement_type = MovementType.ISSUE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line2.id, quantity_delta = quantity_delta2)
 
     db_session.add_all([stock_movement1, stock_movement2])
     db_session.commit()
-    db_session.refresh([stock_movement1, stock_movement2])
+    db_session.refresh(stock_movement1)
+    db_session.refresh(stock_movement2)
 
     stock_service.recalculate(store_id = store.id, product_id = yoghurt.id, from_movement_date = stock_movement1.movement_date)
 
     #first, lemmee confirm that the correct running_baoance for each StockMovement was correctly set, before I verify that they could be correctly edited
-    expected_stock_balance = Decimal("150")
+    expected_stock_balance = Decimal("30")
     assert stock_movement2.running_balance == expected_stock_balance
     assert stock_movement1.running_balance == wrong_quantity
-    assert stock_movement2.running_balance == stock_movement1.quantity_delta + stock_movement1.running_balance
+    assert stock_movement2.running_balance == stock_movement2.quantity_delta + stock_movement1.running_balance
 
     operator_name = "Prince"
     correct_quantity = Decimal("100")
 
     stock_service.update_historical_stockmovement(movement_id = stock_movement1.id, new_quantity_delta=correct_quantity, operator_name = operator_name, remarks="testing feature of updating historical stockmovement")
-    db_session.refresh([stock_movement1, stock_movement2])
+    db_session.refresh(stock_movement1)
+    db_session.refresh(stock_movement2)
 
-    expected_stock_balance = Decimal("200")
+    expected_stock_balance = correct_quantity + stock_movement2.quantity_delta
     assert stock_movement2.running_balance == expected_stock_balance
     assert stock_movement1.running_balance == correct_quantity
-    assert stock_movement2.running_balance == stock_movement1.quantity_delta + stock_movement1.running_balance
+    assert stock_movement2.running_balance == stock_movement2.quantity_delta + stock_movement1.running_balance
     
     balance = db_session.query(StockBalance).filter(StockBalance.store_id == store.id, StockBalance.product_id == yoghurt.id).first()
     assert balance.quantity == expected_stock_balance
@@ -114,19 +116,21 @@ def test_update_historical_stockmovement_recalculates_forward_and_creates_log_FO
     
     document_line1 = seed_dummy_document_line(session = db_session, store_id = store.id, product_id = yoghurt.id, unit_id = base_unit.id)
     quantity_delta1 = Decimal("200")
-    stock_movement1 = StockMovement(date = date(2026, 5, 1), movement_type = MovementType.RECIEVE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line1.id, quantity_delta = quantity_delta1)
+    stock_movement1 = StockMovement(movement_date = date(2026, 5, 1), movement_type = MovementType.RECIEVE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line1.id, quantity_delta = quantity_delta1)
     
     document_line2 = seed_dummy_document_line(session = db_session, store_id = store.id, product_id = yoghurt.id, unit_id = base_unit.id)
     quantity_delta2 = wrong_quantity
-    stock_movement2 = StockMovement(date = date(2026, 5, 2), movement_type = MovementType.ISSUE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line2.id, quantity_delta = quantity_delta2)
+    stock_movement2 = StockMovement(movement_date = date(2026, 5, 2), movement_type = MovementType.ISSUE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line2.id, quantity_delta = quantity_delta2)
 
     document_line3 = seed_dummy_document_line(session = db_session, store_id = store.id, product_id = yoghurt.id, unit_id = base_unit.id)
     quantity_delta3 = Decimal("20")
-    stock_movement3 = StockMovement(date = date(2026, 5, 3), movement_type = MovementType.RECIEVE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line3.id, quantity_delta = quantity_delta3)
+    stock_movement3 = StockMovement(movement_date = date(2026, 5, 3), movement_type = MovementType.RECIEVE, store_id = store.id, product_id = yoghurt.id, document_line_id = document_line3.id, quantity_delta = quantity_delta3)
 
     db_session.add_all([stock_movement1, stock_movement2, stock_movement3])
     db_session.commit()
-    db_session.refresh([stock_movement1, stock_movement2, stock_movement3])
+    db_session.refresh(stock_movement1)
+    db_session.refresh(stock_movement2)
+    db_session.refresh(stock_movement3)
 
     stock_service.recalculate(store_id = store.id, product_id = yoghurt.id, from_movement_date = stock_movement1.movement_date)
 
@@ -141,7 +145,9 @@ def test_update_historical_stockmovement_recalculates_forward_and_creates_log_FO
     correct_quantity = Decimal("-100")
 
     stock_service.update_historical_stockmovement(movement_id = stock_movement2.id, new_quantity_delta=correct_quantity, operator_name = operator_name, remarks="testing feature of updating historical stockmovement")
-    db_session.refresh([stock_movement1, stock_movement2, stock_movement3])
+    db_session.refresh(stock_movement1)
+    db_session.refresh(stock_movement2)
+    db_session.refresh(stock_movement3)
 
     expected_stock_balance = Decimal("120")
     assert stock_movement3.running_balance == expected_stock_balance
@@ -182,7 +188,7 @@ def test_insert_and_link_historical_movement_does_not_break_anchor_math(db_sessi
 
     # but then, I went to the store one day and discovered that the shelf for yoghurt had 18pcs instead of 20pcs
     # what to do?... I just updated my inventory to reflect the newly discovered quantity
-    stock_take = inventory_service.submit_stocktake(quantity = discovered_quantity, store_id = store.id, product_id = yoghurt.id, count_date = date.today(), operator_name = "Prince", remarks = "wetin do our yoghurt.. yhen yhen")
+    stock_take = inventory_service.submit_stocktake(target_quantity = discovered_quantity, store_id = store.id, product_id = yoghurt.id, stocktake_date = date.today(), operator_name = "Prince", remarks = "wetin do our yoghurt.. yhen yhen")
 
     #this is supposed to make my stockBalance equal to the discvoerd quantity]
     stock_balance = db_session.query(StockBalance).filter(StockBalance.store_id == store.id, StockBalance.product_id == yoghurt.id).first()
@@ -244,7 +250,7 @@ def test_delayed_stocktake_submission_corrects_timeline(db_session, inventory_se
     assert stock_balance.quantity == expected_balance_after_stocktake_is_taken
 
 
-def test_backdated_stockmovement_among_mmultiple_stocktakeks_clamped_by_anchors(db_session, inventory_service, stock_service):
+def test_backdated_stockmovement_among_multiple_stocktakes_clamped_by_anchors(db_session, inventory_service, stock_service):
     # ensures a backdated stock_movement updates history up till the point where the next anchor clamps it (by anchor, I mean stock_takes which force the stock balance to conform to a certain value regardless of preceding stock_movements running balances)
     _, _, yoghurt, _ = setup_yoghurt_plain(session = db_session)
     store = seed_test_stores(session = db_session, no_of_stores=1)[0]
@@ -255,13 +261,11 @@ def test_backdated_stockmovement_among_mmultiple_stocktakeks_clamped_by_anchors(
     stock_take2 = inventory_service.submit_stocktake(store_id=store.id, product_id = yoghurt.id, stocktake_date = date(2026, 5, 10), target_quantity = stocktake_quantity2, operator_name = "Prince", remarks="Second StockK Take")
 
     stock_movement_quantity_delta1 = Decimal("-20")
-    mid_stock_movement1 = StockMovement(store_id = store.id, product_id = yoghurt.id, movement_date = date(2026, 5, 6), quantity_delta = stock_movement_quantity_delta1, movement_type=MovementType.ISSUE, remamrks = "Issuing out product to test program logic")
-    db_session.add(mid_stock_movement1)
-    db_session.commit()
-
-    stock_service.recalculate(store_id = store.id, product_id = yoghurt.id, from_movement_date = stock_take1.movement_date)
-    
-    db_session.refresh([stock_take1, stock_take2, mid_stock_movement1])
+    mid_stock_movement1 = stock_service.insert_and_link_historical_movement(store_id = store.id, product_id = yoghurt.id, associated_stocktake_id = stock_take2.id, movement_date = date(2026, 5, 6), quantity_delta = stock_movement_quantity_delta1, movement_type=MovementType.ISSUE, operator_name="Prince", remarks = "Issuing out product to test program logic")
+        
+    db_session.refresh(stock_take1)
+    db_session.refresh(stock_take2)
+    db_session.refresh(mid_stock_movement1)
 
     assert mid_stock_movement1.running_balance == stocktake_quantity1 + stock_movement_quantity_delta1
     assert stock_take2.running_balance == stocktake_quantity2 #should be unchanged by inserted stock movement
@@ -270,11 +274,12 @@ def test_backdated_stockmovement_among_mmultiple_stocktakeks_clamped_by_anchors(
     assert stock_balance.quantity == stocktake_quantity2
 
     stock_movement_quantity_delta2 = Decimal("40")
-    mid_stock_movement2 = StockMovement(store_id = store.id, product_id = yoghurt.id, movement_date = date(2026, 5, 8), quantity_delta = stock_movement_quantity_delta2, movement_type=MovementType.RECIEVE, remamrks = "Receiving product to test program logic")
-    db_session.add(mid_stock_movement2)
-    db_session.commit()
+    mid_stock_movement2 = stock_service.insert_and_link_historical_movement(store_id = store.id, product_id = yoghurt.id, associated_stocktake_id = stock_take2.id, movement_date = date(2026, 5, 8), quantity_delta = stock_movement_quantity_delta2, movement_type=MovementType.RECIEVE, operator_name="Prince", remarks = "Receiving product to test program logic")
 
-    db_session.refresh([stock_take2, mid_stock_movement1, mid_stock_movement2, stock_balance])
+    db_session.refresh(stock_take2)
+    db_session.refresh(mid_stock_movement1)
+    db_session.refresh(mid_stock_movement2)
+    db_session.refresh(stock_balance)
 
     assert stock_take2.running_balance == stocktake_quantity2 #should be unchanged by inserted stock movement
     assert mid_stock_movement1.running_balance == stocktake_quantity1 + stock_movement_quantity_delta1
@@ -293,31 +298,30 @@ def test_historical_update_in_store_one_does_not_leak_or_alter_store_two(db_sess
     store2_stock_movement = StockMovement(store_id = store2.id, product_id = yoghurt.id, movement_type = MovementType.RECIEVE, quantity_delta = store2_quantity_delta, running_balance = store2_quantity_delta)
     
     db_session.add_all([store1_stock_movement, store2_stock_movement])
-    db_session.refresh([store1_stock_movement, store2_stock_movement])
+    db_session.commit()
+    db_session.refresh(store1_stock_movement)
+    db_session.refresh(store2_stock_movement)
+
 
     new_quantity_delta = Decimal("200")
     stock_service.update_historical_stockmovement(movement_id = store1_stock_movement.id, new_quantity_delta=new_quantity_delta, operator_name = "Prince", remarks = "It was discovered that an initial typo error led to wrong values entered")
 
-    db_session.refresh([store1_stock_movement, store2_stock_movement])
+    db_session.refresh(store1_stock_movement)
+    db_session.refresh(store2_stock_movement)
     assert store1_stock_movement.quantity_delta == new_quantity_delta
     assert store2_stock_movement.quantity_delta == store2_quantity_delta
 
 
-def test_cold_start_with_negative_values_allowed_on_day_one(db_session, stock_service):
+def test_cold_start_with_negative_values_allowed_on_day_one(db_session, stock_service, inventory_service):
     _, _, yoghurt, _ = setup_yoghurt_plain(session = db_session)
     store = seed_test_stores(session = db_session, no_of_stores=1)[0]
 
     negative_quantity_delta = Decimal("-5")
-    stock_movement = StockMovement(store_id = store.id, product_id = yoghurt.id, quantity_delta = negative_quantity_delta, movement_type = MovementType.ISSUE, movement_date = date(2026, 3, 23))
-    db_session.add(stock_movement)
-    db_session.commit()
+    stock_movement = inventory_service.submit_stocktake(store_id = store.id, product_id = yoghurt.id, target_quantity = negative_quantity_delta, operator_name = "Prince", stocktake_date = date(2026, 3, 23), remarks = "Taking an initial stocktake with a negative value")
     
-    stock_service.recalculate(store_id = store.id, product_id = yoghurt.id, from_movement_date = stock_movement.movement_date)
-    db_session.refresh(stock_movement)
-
     assert stock_movement.running_balance == negative_quantity_delta
     
-    stock_balance = db_session.query(StockBalance).filter_by(store_id = store.id, product = yoghurt.id).first()
+    stock_balance = db_session.query(StockBalance).filter_by(store_id = store.id, product_id = yoghurt.id).first()
     assert stock_balance.quantity == negative_quantity_delta
 
 
@@ -333,7 +337,8 @@ def test_submit_stock_take_with_zero_quantity(db_session, inventory_service, sto
     db_session.commit()
 
     stock_service.recalculate(store_id = store.id, product_id = yoghurt.id, from_movement_date = stock_movement1.movement_date)
-    db_session.refresh([stock_movement1, stock_movement2])
+    db_session.refresh(stock_movement1)
+    db_session.refresh(stock_movement2)
 
     inventory_service.submit_stocktake(store_id = store.id, product_id = yoghurt.id, target_quantity = Decimal("0"), operator_name = "Prince", remarks = "Omo, everything cast")
 
