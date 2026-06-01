@@ -5,6 +5,12 @@ from datetime import date
 from decimal import Decimal
 from exceptions import UpdateStockMovementError, AssociateStockMovementError
 from typing import Optional
+from enum import Enum
+
+
+class AssociationMutationType(Enum): # for mutations to stocktake associations
+    LINK = 1
+    UNLINK = 2
 
 
 class StockService:
@@ -138,6 +144,16 @@ class StockService:
         # (e.g. my stockmovement records say I should have 43tins of milk, but my physical inventory is 40tins of milk.. I'd have do a StockTake, recording 40tins as my new StockBalance),
         # since stock takes are usually initially inexplainable,
         # this method allows for linking stock_movements that may help to explain a stock take, to that stock take
+        self._mutate_stocktake_association(mutation_type=AssociationMutationType.LINK, movement_id = movement_id, stocktake_id = stocktake_id, operator_name=operator_name)
+    
+
+    def remove_asssociation_from_stock_movement(self, movement_id:int, operator_name:str):
+        self._mutate_stocktake_association(mutation_type=AssociationMutationType.UNLINK, movement_id = movement_id, operator_name = operator_name)
+
+
+    def _mutate_stocktake_association(self, movement_id: int, operator_name: str, mutation_type: AssociationMutationType, stocktake_id:Optional[int] = None):
+        # This method was created to apply DRY principle on certain methods.. thus, it may need to be evaluated in context to be understood i.e. in the context of the caller methtods
+        # At the time of initial creation, it was meant to serve for both linking and unlinking stocktake records with other stockmovement records that helped explain them(the stocktakes)
         transaction_context = (
             self.session.begin_nested()
             if self.session.in_transaction()
@@ -152,32 +168,55 @@ class StockService:
             self.session.execute(lock_statement)
             
             stock_movement = self.session.query(StockMovement).filter_by(id = movement_id).first()
-            stock_take = self.session.query(StockMovement).filter_by(id = stocktake_id).first()
-
-            if not stock_movement or not stock_take:
-                raise AssociateStockMovementError(f"Invalid Reference --> stock_movement with id={movement_id} or stock_take with id={stocktake_id} does not exist")
+        
+            if not stock_movement:
+                raise AssociateStockMovementError(f"stock_movement with id={movement_id} does not exist")
             
-            if stock_take.movement_type != MovementType.STOCKTAKE:
-                raise AssociateStockMovementError(f"Target stock movement record with id={stock_take.id} is not really a StockTake i.e. does not have movement_type=STOCKTAKE")
+            defualt_remark = None
+            stocktake_to_associate_with = None # should be set only for mutation_type == AssociationMutationType.UNLINK
 
-            if stock_movement.movement_date > stock_take.movement_date:
-                raise AssociateStockMovementError(f"Invalid date.. explanatory Stock movement cannot have date later than stock_take to be explained")
-            
-            stock_movement.associated_stockmovement_id = stock_take.id
+            if mutation_type == AssociationMutationType.UNLINK:
+        
+                if stock_movement.associated_stockmovement_id is None:
+                    raise AssociateStockMovementError("Error removing association: stock_movement with id={stock_movement.id} has no associated_stockmovement")
+                
+                default_remark = f"Remove existing association between stocktake with id={stock_movement.associated_stockmovement_id} and stockmovement with id={stock_movement.id}"
+
+            else:
+
+                if not stocktake_id:
+                    raise AssociateStockMovementError(f"Error creating association: stocktake_id not specified")
+
+                stocktake_to_associate_with = self.session.query(StockMovement).filter_by(id = stocktake_id).first()
+
+                if not stocktake_to_associate_with:
+                    raise AssociateStockMovementError(f"Error creating association: stock_take with id={stocktake_id} does not exist")
+                
+                if stocktake_to_associate_with.movement_type != MovementType.STOCKTAKE:
+                    raise AssociateStockMovementError(f"Error creating association: Target stock movement record with id={stocktake_to_associate_with.id} is not really a StockTake i.e. does not have movement_type=STOCKTAKE")
+
+                if stock_movement.movement_date > stocktake_to_associate_with.movement_date:
+                    raise AssociateStockMovementError(f"Error creating association: Invalid date.. explanatory Stock movement cannot have date later than stock_take to be explained")
+                
+                default_remark = f"Partly / Fully Explaining stock-take with id={stocktake_to_associate_with.id} using stockmovement with id={stock_movement.id}"
+                
+                
+            stock_movement.associated_stockmovement_id = stocktake_to_associate_with.id if stocktake_to_associate_with else None  # this should set this property to None if mutation_type == AssociationMutationType.UNLINK
 
             intervention_log = InterventionLog(
                 store_id = stock_movement.store_id,
                 product_id = stock_movement.product_id,
-                source_action_type = ActionType.EXPLAIN_DISCREPANCY,
+                source_action_type = ActionType.REMOVE_ASSOCIATION if mutation_type == AssociationMutationType.UNLINK else ActionType.EXPLAIN_DISCREPANCY,
                 concerned_movement_id = stock_movement.id,
                 new_value_snapshot = -1,
                 changed_by = operator_name,
-                remarks = f"Partly / Fully Explaining stock take with id={stock_take.id} using stockmovement with id={stock_movement.id}"
+                remarks = default_remark
             )
 
             self.session.add(intervention_log)
             self.session.flush()
-    
+        
+
 
     def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  operator_name:str, remarks: Optional[str] = None) -> StockMovement:
         # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product

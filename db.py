@@ -125,6 +125,7 @@ class ActionType(str, enum.Enum):
     BALANCE_OVERWRITE_RECONCILE = "BALANCE_OVERWRITE_RECONCILE"
     INITIAL_STOCK_TAKE = "INITIAL_STOCK_TAKE"
     EXPLAIN_DISCREPANCY = "EXPLAIN_DISCREPANCY"
+    REMOVE_ASSOCIATION = "REMOVE_ASSOCIATION"
 
 class InterventionLog(Base):
     # this table serves as audit trail for human intervention to stock inventory
