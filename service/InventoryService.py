@@ -83,7 +83,7 @@ class InventoryService:
             return document
     
 
-    def submit_stocktake(self, store_id: int, product_id: int, target_quantity: Decimal, operator_name: str, remarks: str, stocktake_date:date = date.today()):
+    def submit_stocktake(self, store_id: int, product_id: int, target_quantity: Decimal, operator_name: str, remarks: str, stocktake_date:date = date.today()) -> StockMovement:
         # this handles some scenarios as follows
         # 1. the scenario where store keeper needs to update digital stock balance of a product to align with its physical stock balance, in cases of observed but inexplainable discrepancies
         # 2. fresh inventory taking

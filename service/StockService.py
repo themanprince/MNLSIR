@@ -137,7 +137,45 @@ class StockService:
 
             #StockBalance will be updated in recalculate() method
             self.recalculate(store_id=stock_movement.store_id, product_id=stock_movement.product_id, from_movement_date=stock_movement.movement_date)
-    
+
+
+ 
+    def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  operator_name:str, remarks: Optional[str] = None) -> StockMovement:
+        # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product
+        # (e.g. my stockmovement records say I should have 43tins of milk, but my physical inventory is 40tins of milk.. I'd have do a StockTake, recording 40tins as my new StockBalance),
+        # since stock takes are usually initially inexplainable,
+        # this method allows for linking stock_movements (discovered later on) that may help to explain a stock take, to that stock take
+        transaction_context = (
+            self.session.begin_nested()
+            if self.session.in_transaction()
+            else self.session.begin()
+        )
+        with transaction_context:
+            lock_statement = (
+                select(StockMovement)
+                .where(StockMovement.id == associated_stocktake_id)
+                .with_for_update()
+            )
+            self.session.execute(lock_statement)
+                        
+            explanatory_stock_movement = StockMovement( #the linking to associated_stocktake_id will not be done in this method but in associate_stock_movement_to_stocktake(), where proper validation will be carried out before linking the stock movement records
+                store_id = store_id,
+                product_id = product_id,
+                movement_type = movement_type,
+                quantity_delta = quantity_delta,
+                movement_date = movement_date,
+                remarks = remarks if remarks else None
+            )
+
+            self.session.add(explanatory_stock_movement)
+            self.session.flush()
+
+            self.recalculate(store_id = store_id, product_id = product_id, from_movement_date = movement_date)
+            
+            self.associate_stock_movement_to_stocktake(movement_id = explanatory_stock_movement.id, stocktake_id=associated_stocktake_id, operator_name = operator_name)
+            
+            return explanatory_stock_movement
+
 
     def associate_stock_movement_to_stocktake(self, movement_id: int, stocktake_id: int, operator_name:str):
         # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product
@@ -147,7 +185,7 @@ class StockService:
         self._mutate_stocktake_association(mutation_type=AssociationMutationType.LINK, movement_id = movement_id, stocktake_id = stocktake_id, operator_name=operator_name)
     
 
-    def remove_asssociation_from_stock_movement(self, movement_id:int, operator_name:str):
+    def remove_association_from_stock_movement(self, movement_id:int, operator_name:str):
         self._mutate_stocktake_association(mutation_type=AssociationMutationType.UNLINK, movement_id = movement_id, operator_name = operator_name)
 
 
@@ -216,40 +254,3 @@ class StockService:
             self.session.add(intervention_log)
             self.session.flush()
         
-
-
-    def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  operator_name:str, remarks: Optional[str] = None) -> StockMovement:
-        # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product
-        # (e.g. my stockmovement records say I should have 43tins of milk, but my physical inventory is 40tins of milk.. I'd have do a StockTake, recording 40tins as my new StockBalance),
-        # since stock takes are usually initially inexplainable,
-        # this method allows for linking stock_movements (discovered later on) that may help to explain a stock take, to that stock take
-        transaction_context = (
-            self.session.begin_nested()
-            if self.session.in_transaction()
-            else self.session.begin()
-        )
-        with transaction_context:
-            lock_statement = (
-                select(StockMovement)
-                .where(StockMovement.id == associated_stocktake_id)
-                .with_for_update()
-            )
-            self.session.execute(lock_statement)
-                        
-            explanatory_stock_movement = StockMovement( #the linking to associated_stocktake_id will not be done in this method but in associate_stock_movement_to_stocktake(), where proper validation will be carried out before linking the stock movement records
-                store_id = store_id,
-                product_id = product_id,
-                movement_type = movement_type,
-                quantity_delta = quantity_delta,
-                movement_date = movement_date,
-                remarks = remarks if remarks else None
-            )
-
-            self.session.add(explanatory_stock_movement)
-            self.session.flush()
-
-            self.recalculate(store_id = store_id, product_id = product_id, from_movement_date = movement_date)
-            
-            self.associate_stock_movement_to_stocktake(movement_id = explanatory_stock_movement.id, stocktake_id=associated_stocktake_id, operator_name = operator_name)
-            
-            return explanatory_stock_movement

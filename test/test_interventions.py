@@ -11,7 +11,7 @@ from db import StockMovement, MovementType, InterventionLog, ActionType, StockBa
 from schema.ReceiveStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
 from exceptions import UpdateStockMovementError, AssociateStockMovementError
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 
@@ -287,7 +287,7 @@ def test_backdated_stockmovement_among_multiple_stocktakes_clamped_by_anchors(db
     assert stock_balance.quantity == stocktake_quantity2
 
 
-def test_historical_update_in_store_one_does_not_leak_or_alter_store_two(db_session, stock_service):
+def test_historical_update_in_store_1_does_not_leak_or_alter_store_2(db_session, stock_service):
     _, _, yoghurt, _ = setup_yoghurt_plain(session = db_session)
     [store1, store2] = seed_test_stores(session = db_session, no_of_stores=2)
 
@@ -365,3 +365,31 @@ def test_invalid_association_raises_error(db_session, stock_service):
     
     log_count = db_session.query(InterventionLog).count()
     assert log_count == 0
+
+
+def test_remove_association_from_stock_movement_works_and_does_not_affect_math(db_session, inventory_service, stock_service):
+    _, _, yoghurt, _ = setup_yoghurt_plain(session = db_session)
+    store = seed_test_stores(session = db_session, no_of_stores=1)[0]
+   
+    stock_take = inventory_service.submit_stocktake(store_id = store.id, product_id = yoghurt.id, target_quantity = Decimal("20"), operator_name="Prince", remarks = "Just testing the software")
+    explanatory_stock_movement = stock_service.insert_and_link_historical_movement(movement_date = (date.today() - timedelta(days=2)), store_id = store.id, product_id = yoghurt.id, associated_stocktake_id=stock_take.id, movement_type = MovementType.RECIEVE, quantity_delta = Decimal("10"), operator_name = "Prince", remarks="Just testing the software")
+    
+    assert explanatory_stock_movement.associated_stockmovement_id == stock_take.id
+    #inserting a random stockmovement so I can carry out a calculation of running balances... the aim is to check later that unlinking the created association does not mess this caculation up
+    stock_movement = StockMovement(movement_date = (date.today() - timedelta(days = 1)), store_id = store.id, product_id = yoghurt.id, movement_type = MovementType.ISSUE, quantity_delta = Decimal("-2"), remarks="Be like them tiff")
+    db_session.add(stock_movement)
+    db_session.commit()
+    db_session.refresh(stock_movement)
+    stock_service.recalculate(store_id = store.id, product_id = yoghurt.id, from_movement_date = stock_movement.movement_date)
+
+    stock_balance = db_session.query(StockBalance).filter_by(store_id = store.id, product_id = yoghurt.id).first()
+    stock_balance_quantity_before_removing_association = stock_balance.quantity
+
+    stock_service.remove_association_from_stock_movement(movement_id = explanatory_stock_movement.id, operator_name = "Prince")
+    
+    assert explanatory_stock_movement.associated_stockmovement_id is None
+
+    stock_balance = db_session.query(StockBalance).filter_by(store_id = store.id, product_id = yoghurt.id).first()
+    stock_balance_quantity_after_removing_association = stock_balance.quantity
+
+    assert stock_balance_quantity_after_removing_association == stock_balance_quantity_before_removing_association
