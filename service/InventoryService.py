@@ -15,74 +15,7 @@ class InventoryService:
         self.unit_service = UnitService(session=session)
         self.stock_service = StockService(session=session)
     
-
-    def receive_stock(self, payload: ReceiveStockRequest):
-        if payload.date > date.today():
-            raise ReceiveIssueStockError("Please check date entered. Cannot Receive Stock in the future")
-        
-        if any([item.quantity <= 0 for item in payload.items]):
-            raise ReceiveIssueStockError("Please check quantities of items to Receive. Cannot have zero(0) or -negative quantity")
-
-        if not payload.items:
-            raise ReceiveIssueStockError("No products were specified for receiving. Please specify products/quantities to receive")
-
-        transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
-            self.session.begin_nested()
-            if self.session.in_transaction()
-            else self.session.begin()
-        )
-        with transaction_context: #transaction
-            document = Document(
-                document_type = DocumentType.GOODS_RECEIVED,
-                store_id = payload.store_id,
-                date = payload.date,
-                source_party = payload.source_party,
-                remarks = payload.remarks
-            )
-
-            self.session.add(document)
-            self.session.flush()
-
-            for item in payload.items:
-
-                base_quantity = self.unit_service.to_base(
-                    product_id=item.product_id,
-                    quantity=item.quantity,
-                    from_unit_id=item.unit_id
-                )
-
-                document_line = DocumentLine(
-                    document_id = document.id,
-                    product_id = item.product_id,
-                    entered_quantity = item.quantity,
-                    entered_unit_id = item.unit_id,
-                    base_quantity = base_quantity
-                )
-
-                self.session.add(document_line)
-                self.session.flush()
-
-                movement =  StockMovement(
-                    store_id = payload.store_id,
-                    product_id = item.product_id,
-                    document_line_id = document_line.id,
-                    movement_type = MovementType.RECIEVE,
-                    quantity_delta = base_quantity,
-                    movement_date = payload.date
-                )
-
-                self.session.add(movement)
-                self.session.flush()
-
-                self.stock_service.recalculate(
-                    store_id=payload.store_id,
-                    product_id = item.product_id,
-                    from_movement_date=payload.date
-                )
-
-            return document
     
-
     def receive_issue_stock(self, payload: ReceiveStockRequest | IssueStockRequest):
         if payload.date > date.today():
             raise ReceiveIssueStockError("Please check date entered. Cannot Receive/Issue Stock in the future")

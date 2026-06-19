@@ -43,7 +43,7 @@ def test_receive_stock_creates_correct_records(db_session, inventory_service):
         ]
     )
 
-    doc = inventory_service.receive_stock(payload)
+    doc = inventory_service.receive_issue_stock(payload)
     db_session.commit()
 
     #document
@@ -83,7 +83,7 @@ def test_receive_stock_rejects_future_date(db_session, inventory_service):
     )
 
     with pytest.raises(ReceiveIssueStockError):
-        inventory_service.receive_stock(payload)
+        inventory_service.receive_issue_stock(payload)
 
 
 def test_receive_stock_raises_error_on_invalid_parameters(db_session, inventory_service):
@@ -100,7 +100,7 @@ def test_receive_stock_raises_error_on_invalid_parameters(db_session, inventory_
             ]
         )
 
-        inventory_service.receive_stock(payload)
+        inventory_service.receive_issue_stock(payload)
 
 
 def test_receive_stock_raises_error_on_no_product_to_receive(db_session, inventory_service):
@@ -115,7 +115,7 @@ def test_receive_stock_raises_error_on_no_product_to_receive(db_session, invento
     )
 
     with pytest.raises(ReceiveIssueStockError):
-        inventory_service.receive_stock(payload)
+        inventory_service.receive_issue_stock(payload)
 
 
 def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_service):
@@ -134,7 +134,7 @@ def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_s
     )
 
     with pytest.raises(ReceiveIssueStockError):
-        inventory_service.receive_stock(payload)
+        inventory_service.receive_issue_stock(payload)
 
 
 def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_service):
@@ -153,7 +153,7 @@ def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_servi
     )
 
     with pytest.raises(ReceiveIssueStockError):
-        inventory_service.receive_stock(payload)
+        inventory_service.receive_issue_stock(payload)
 
 
 
@@ -185,7 +185,7 @@ def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service
     )
 
     with pytest.raises(RuntimeError): #as is the error expected to be raised by the side effect
-        inventory_service.receive_stock(payload)
+        inventory_service.receive_issue_stock(payload)
     
     # even if the first product was received fine, (having no issues)
     # it is expected that the errors caused by the second product will cause a rollback on the entire transaction, thereby undoing even the receiving of the first product

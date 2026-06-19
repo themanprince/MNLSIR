@@ -176,7 +176,7 @@ def test_insert_and_link_historical_movement_does_not_break_anchor_math(db_sessi
     discovered_quantity = received_quantity_delta + missing_quantity_delta
 
     # so one day I received some of my product
-    inventory_service.receive_stock(ReceiveStockRequest(
+    inventory_service.receive_issue_stock(ReceiveStockRequest(
         store_id = store.id,
         source_party = "Prince",
         remarks="Receiving yoghurt to test (and illustrate) associate_stock_movement_to_stocktake()",
