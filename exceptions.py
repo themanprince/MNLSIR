@@ -4,7 +4,7 @@ class UnitConversionError(Exception):
 class CreateConversionRuleError(Exception):
     pass
 
-class ReceiveStockError(Exception):
+class ReceiveIssueStockError(Exception):
     pass
 
 class UpdateStockMovementError(Exception):

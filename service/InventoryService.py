@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from db import Document, DocumentType, DocumentLine, StockMovement, MovementType, StockBalance, InterventionLog, ActionType
-from schema.ReceiveStockRequest import ReceiveStockRequest
+from schema.ReceiveIssueStockRequest import ReceiveStockRequest, IssueStockRequest
 from service.UnitService import UnitService
 from service.StockService import StockService
-from exceptions import ReceiveStockError
+from exceptions import ReceiveIssueStockError
 from datetime import date
 from decimal import Decimal
 
@@ -18,13 +18,13 @@ class InventoryService:
 
     def receive_stock(self, payload: ReceiveStockRequest):
         if payload.date > date.today():
-            raise ReceiveStockError("Please check date entered. Cannot Receive Stock in the future")
+            raise ReceiveIssueStockError("Please check date entered. Cannot Receive Stock in the future")
         
         if any([item.quantity <= 0 for item in payload.items]):
-            raise ReceiveStockError("Please check quantities of items to Receive. Cannot have zero(0) or -negative quantity")
+            raise ReceiveIssueStockError("Please check quantities of items to Receive. Cannot have zero(0) or -negative quantity")
 
         if not payload.items:
-            raise ReceiveStockError("No products were specified for receiving. Please specify products/quantities to receive")
+            raise ReceiveIssueStockError("No products were specified for receiving. Please specify products/quantities to receive")
 
         transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
             self.session.begin_nested()
@@ -82,6 +82,97 @@ class InventoryService:
 
             return document
     
+
+    def receive_issue_stock(self, payload: ReceiveStockRequest | IssueStockRequest):
+        if payload.date > date.today():
+            raise ReceiveIssueStockError("Please check date entered. Cannot Receive/Issue Stock in the future")
+        
+        if any([item.quantity <= 0 for item in payload.items]):
+            raise ReceiveIssueStockError("Please check quantities of items to Receive/Issue. Cannot have zero(0) or -negative quantity")
+
+        if not payload.items:
+            raise ReceiveIssueStockError("No products were specified for receiving/issuing. Please specify products/quantities to receive")
+
+        transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
+            self.session.begin_nested()
+            if self.session.in_transaction()
+            else self.session.begin()
+        )
+        with transaction_context: #transaction
+            document = Document(
+                document_type = DocumentType.GOODS_RECEIVED if isinstance(payload, ReceiveStockRequest) else DocumentType.ISSUE_RECORDS,
+                store_id = payload.store_id,
+                date = payload.date,
+                source_party = payload.source_party if isinstance(payload, ReceiveStockRequest) else None,
+                destination_party = payload.dest_party if isinstance(payload, IssueStockRequest) else None,
+                remarks = payload.remarks
+            )
+
+            self.session.add(document)
+            self.session.flush()
+
+            for item in payload.items:
+
+                base_quantity = self.unit_service.to_base(
+                    product_id=item.product_id,
+                    quantity=item.quantity,
+                    from_unit_id=item.unit_id
+                )
+
+                """
+                # I commented out this code to allow issuing even on insufficient quantities. Here's why..
+                # Sometimes, physical inventory may not agree with records on the software.
+                # For instance, a scenario where the physical inventory is sufficient but the software's inventory is not.
+                # Such scenario may result from improper recording in the past, which could be fixed later on by the user.
+                # However, it should not lead to loss of present records which could result if the present issuing is prevented
+                # due to insufficient quantity according to the software's records.
+                
+                if isinstance(payload, IssueStockRequest):
+                    product_balance = self.session.query(StockBalance).filter_by(
+                        store_id = payload.store_id, product_id = item.product_id
+                    ).with_for_update().one_or_none()
+                    
+                    qty_avail = product_balance.quantity if product_balance else 0
+                    
+                    if qty_avail - base_quantity < 0:
+                        raise ReceiveIssueStockError(f"Cannot issue product with id {item.product_id}. Insufficient Quantity Available in store")
+                """
+
+                document_line = DocumentLine(
+                    document_id = document.id,
+                    product_id = item.product_id,
+                    entered_quantity = item.quantity,
+                    entered_unit_id = item.unit_id,
+                    base_quantity = base_quantity
+                )
+
+                self.session.add(document_line)
+                self.session.flush()
+
+                movement =  StockMovement(
+                    store_id = payload.store_id,
+                    product_id = item.product_id,
+                    document_line_id = document_line.id,
+                    movement_type = MovementType.RECIEVE if isinstance(payload, ReceiveStockRequest) else MovementType.ISSUE,
+                    quantity_delta = base_quantity if isinstance(payload, ReceiveStockRequest) else -base_quantity,
+                    movement_date = payload.date
+                )
+
+                self.session.add(movement)
+            
+            # advised to put these outside the loop for performance reasons
+            self.session.flush()
+
+            for item in payload.items:
+                self.stock_service.recalculate(
+                    store_id=payload.store_id,
+                    product_id = item.product_id,
+                    from_movement_date=payload.date
+                )
+
+            return document
+    
+
 
     def submit_stocktake(self, store_id: int, product_id: int, target_quantity: Decimal, operator_name: str, remarks: str, stocktake_date:date = date.today()) -> StockMovement:
         # this handles some scenarios as follows

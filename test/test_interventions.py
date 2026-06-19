@@ -8,7 +8,7 @@ from .helpers import setup_yoghurt_plain, seed_test_stores, seed_dummy_document_
 from service.InventoryService import InventoryService
 from service.StockService import StockService
 from db import StockMovement, MovementType, InterventionLog, ActionType, StockBalance
-from schema.ReceiveStockRequest import ReceiveStockRequest
+from schema.ReceiveIssueStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
 from exceptions import UpdateStockMovementError, AssociateStockMovementError
 from datetime import date, timedelta

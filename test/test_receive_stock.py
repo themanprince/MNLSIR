@@ -4,10 +4,10 @@ from unittest.mock import MagicMock
 from service.InventoryService import InventoryService
 from .conftest import db_session
 from .helpers import seed_test_stores, seed_test_unit, seed_test_product, seed_conversion_rule, setup_achi, setup_yoghurt_plain
-from schema.ReceiveStockRequest import ReceiveStockRequest
+from schema.ReceiveIssueStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
 from db import StockMovement, Document, DocumentLine, DocumentType
-from exceptions import ReceiveStockError
+from exceptions import ReceiveIssueStockError
 from pydantic import ValidationError
 from datetime import date, timedelta
 from decimal import Decimal
@@ -82,7 +82,7 @@ def test_receive_stock_rejects_future_date(db_session, inventory_service):
         ]
     )
 
-    with pytest.raises(ReceiveStockError):
+    with pytest.raises(ReceiveIssueStockError):
         inventory_service.receive_stock(payload)
 
 
@@ -114,7 +114,7 @@ def test_receive_stock_raises_error_on_no_product_to_receive(db_session, invento
         items = [] #empty product list here
     )
 
-    with pytest.raises(ReceiveStockError):
+    with pytest.raises(ReceiveIssueStockError):
         inventory_service.receive_stock(payload)
 
 
@@ -133,7 +133,7 @@ def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_s
         ]
     )
 
-    with pytest.raises(ReceiveStockError):
+    with pytest.raises(ReceiveIssueStockError):
         inventory_service.receive_stock(payload)
 
 
@@ -152,7 +152,7 @@ def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_servi
         ]
     )
 
-    with pytest.raises(ReceiveStockError):
+    with pytest.raises(ReceiveIssueStockError):
         inventory_service.receive_stock(payload)
 
 
