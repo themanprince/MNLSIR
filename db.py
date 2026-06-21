@@ -6,6 +6,15 @@ import enum
 
 Base = declarative_base()
 
+class Staff(Base):
+    __tablename__ = "staff"
+
+    id = mapped_column(Integer, primary_key=True)
+    first_name = mapped_column(String, nullable=False)
+    last_name = mapped_column(String, nullable=False)
+    other_names = mapped_column(String, nullable=True)
+
+
 class Store(Base):
     __tablename__ = "stores"
 
@@ -53,8 +62,11 @@ class Document(Base): # e.g. GoodsReceived, Dispatch, Stock-Requisition-Form etc
     document_type = mapped_column(Enum(DocumentType), nullable=False)
     reference_no = mapped_column(String)
     date = mapped_column(Date, nullable=False, default=date.today)
-    source_party = mapped_column(String)
-    destination_party = mapped_column(String)
+    # At time of writing this comment, I set the source_party and destination_party columns to be optional (i.e. nullable=True)
+    # This is because in certain situations, it may be preferable not to enter values for those columns in the Document table but rather in the DocumentLine table which represents line item in the Document.
+    # An example of this is in recording "Items Removed for 23/8/2026"... It is a single document but its line items could have different destination_party properties
+    source_party = mapped_column(String, nullable=True)
+    destination_party = mapped_column(String, nullable=True)
     remarks = mapped_column(Text)
     created_at = mapped_column(DateTime, default=datetime.utcnow)
     updated_at = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -69,6 +81,9 @@ class DocumentLine(Base):
     entered_quantity = mapped_column(Numeric(12, 4))
     entered_unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
     base_quantity = mapped_column(Numeric(12, 4))
+    #see comment likely still in Document table for explanation of why I put the columns(source_party and destination_party) here and also made them optional
+    source_party = mapped_column(String, nullable=True)
+    destination_party = mapped_column(String, nullable=True)
 
 
 class MovementType(str, enum.Enum):
@@ -90,7 +105,8 @@ class StockMovement(Base):
     associated_stockmovement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #in case this stock movement helps explain another (initially inexplainable) adjusted-StockMovement (i.e. rows with movement_type=MovementType.STOCKTAKE), this column serves as a reference to that adjusted-StockMovement
     running_balance = mapped_column(Numeric(12, 4)) #resulting inventory balance (for the corresponding product) after receiving / issuing the quantity_delta in this stock movement
     target_quantity = mapped_column(Numeric(12, 4), nullable = True) #only for rows having movement_type=MovementType.STOCKTAKE... this column's value should override whatever running_balance was there before it
-
+    recorded_by = mapped_column(Integer, ForeignKey("staff.id"), nullable = False) #for accoutability purposes.. which staff entered this record? this is distinct from who items were received from / issued to
+    
     created_at = mapped_column(DateTime, default=datetime.utcnow)
     updated_at = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -140,7 +156,7 @@ class InterventionLog(Base):
     concerned_movement_id = mapped_column(Integer, ForeignKey("stock_movements.id"), nullable = True) #the StockMovement row that this log was created for i.e. the StockMovement row that is edited, adjusted or created
     old_value_snapshot = mapped_column(Numeric(12, 4), nullable = True) #nullable = True because this could be a fresh inventory taking
     new_value_snapshot = mapped_column(Numeric(12, 4), nullable = False)
-    changed_by = mapped_column(String)
+    recorded_by = mapped_column(Integer, ForeignKey("staff.id"), nullable = False)
     remarks = mapped_column(String)
     changed_at = mapped_column(DateTime, default=datetime.utcnow)
 

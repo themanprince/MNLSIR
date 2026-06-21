@@ -83,6 +83,7 @@ class InventoryService:
                 self.session.flush()
 
                 movement =  StockMovement(
+                    recorded_by = payload.recorded_by,
                     store_id = payload.store_id,
                     product_id = item.product_id,
                     document_line_id = document_line.id,
@@ -107,7 +108,7 @@ class InventoryService:
     
 
 
-    def submit_stocktake(self, store_id: int, product_id: int, target_quantity: Decimal, operator_name: str, remarks: str, stocktake_date:date = date.today()) -> StockMovement:
+    def submit_stocktake(self, recorded_by:int, store_id: int, product_id: int, target_quantity: Decimal, remarks: str, stocktake_date:date = date.today()) -> StockMovement:
         # this handles some scenarios as follows
         # 1. the scenario where store keeper needs to update digital stock balance of a product to align with its physical stock balance, in cases of observed but inexplainable discrepancies
         # 2. fresh inventory taking
@@ -130,6 +131,7 @@ class InventoryService:
             action_type = ActionType.INITIAL_STOCK_TAKE if current_balance_record is None else ActionType.BALANCE_OVERWRITE_RECONCILE
 
             stock_movement = StockMovement(
+                recorded_by = recorded_by,
                 store_id = store_id,
                 product_id = product_id,
                 movement_type = MovementType.STOCKTAKE,
@@ -143,13 +145,13 @@ class InventoryService:
 
             #logging the action into out audit trail
             intervention_log = InterventionLog(
+                recorded_by = recorded_by,
                 store_id = store_id,
                 product_id = product_id,
                 source_action_type = action_type,
                 concerned_movement_id = stock_movement.id,
                 old_value_snapshot = current_quantity,
                 new_value_snapshot = target_quantity,
-                changed_by = operator_name,
                 remarks = remarks
             )
 

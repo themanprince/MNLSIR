@@ -10,6 +10,7 @@ class ReceiveIssueStockRequest(BaseModel):
     date: date
     remarks: str
     items: List[ReceiveIssueItem]
+    recorded_by: int # staff id for accountability purposes
 
 class ReceiveStockRequest(ReceiveIssueStockRequest):
     source_party: str

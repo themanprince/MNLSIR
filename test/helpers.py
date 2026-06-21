@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from decimal import Decimal
-from db import Store, Unit, Product, ProductUnitConversion, Document, DocumentLine, DocumentType
+from db import Staff, Store, Unit, Product, ProductUnitConversion, Document, DocumentLine, DocumentType
 from datetime import date
 
 
@@ -12,6 +12,15 @@ def seed_test_stores(session: Session, no_of_stores:int = 1):
         session.refresh(store)
     
     return stores
+
+
+def seed_test_staff(session: Session):
+    staff = Staff(first_name = "Prince", other_names="Uchechuku", last_name="Adigwe")
+    session.add(staff)
+    session.commit()
+    session.refresh(staff)
+    return staff
+
 
 
 def seed_test_unit(session: Session, name:str, symbol:str):

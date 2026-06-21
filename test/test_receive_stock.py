@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from service.InventoryService import InventoryService
 from .conftest import db_session
-from .helpers import seed_test_stores, seed_test_unit, seed_test_product, seed_conversion_rule, setup_achi, setup_yoghurt_plain
+from .helpers import seed_test_stores, seed_test_staff, setup_achi, setup_yoghurt_plain
 from schema.ReceiveIssueStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
 from db import StockMovement, Document, DocumentLine, DocumentType
@@ -26,7 +26,7 @@ def inventory_service(db_session):
 def test_receive_stock_creates_correct_records(db_session, inventory_service):
     
     [store] = seed_test_stores(session = db_session, no_of_stores = 1)
-
+    staff = seed_test_staff(session = db_session)
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session) #yoghurt is the product that will be used for the test
 
     qty_in_other_unit = Decimal("2")
@@ -38,6 +38,7 @@ def test_receive_stock_creates_correct_records(db_session, inventory_service):
         date = date_received,
         source_party = "Prince",
         remarks="Testing things out",
+        recorded_by = staff.id,
         items = [
             ReceiveIssueItem(product_id = yoghurt.id, unit_id = yoghurt_other_unit.id, quantity = qty_in_other_unit)
         ]
@@ -64,12 +65,13 @@ def test_receive_stock_creates_correct_records(db_session, inventory_service):
     assert movement.product_id == yoghurt.id
     assert movement.quantity_delta == qty_in_base_unit
     assert movement.movement_date == date_received
+    assert movement.recorded_by == staff.id
 
 
 def test_receive_stock_rejects_future_date(db_session, inventory_service):
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session) #in case you don't know, achi is a product.. it is the product that will be used for the test
     future_date = date.today() + timedelta(days=1)
-    
+    staff = seed_test_staff(session = db_session)    
     [store] = seed_test_stores(session = db_session, no_of_stores = 1)
     
     payload = ReceiveStockRequest(
@@ -77,6 +79,7 @@ def test_receive_stock_rejects_future_date(db_session, inventory_service):
         date = future_date,
         source_party = "me",
         remarks = "because I want to",
+        recorded_by = staff.id,
         items = [
             ReceiveIssueItem(product_id = achi.id, unit_id = achi_other_unit.id, quantity = Decimal("2"))
         ]
@@ -88,13 +91,15 @@ def test_receive_stock_rejects_future_date(db_session, inventory_service):
 
 def test_receive_stock_raises_error_on_invalid_parameters(db_session, inventory_service):
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session)
-    
+    staff = seed_test_staff(session = db_session)
+
     with pytest.raises(ValidationError):    
         payload = ReceiveStockRequest(
             store_id = "random stuff", #type:ignore (INSTEAD OF INT, I'M PASSING STR TYPE ON PURPOSE)
             date = date.today(),
             source_party = "me",
             remarks = "because I want to",
+            recorded_by = staff.id,
             items = [
                 ReceiveIssueItem(product_id = achi.id, unit_id = achi_other_unit.id, quantity = Decimal("2"))
             ]
@@ -105,12 +110,14 @@ def test_receive_stock_raises_error_on_invalid_parameters(db_session, inventory_
 
 def test_receive_stock_raises_error_on_no_product_to_receive(db_session, inventory_service):
     [store] = seed_test_stores(session = db_session, no_of_stores = 1)
-    
+    staff = seed_test_staff(session = db_session)
+
     payload = ReceiveStockRequest(
         store_id = store.id,
         date = date.today(),
         source_party = "me",
         remarks = "because I want to",
+        recorded_by = staff.id,
         items = [] #empty product list here
     )
 
@@ -120,7 +127,7 @@ def test_receive_stock_raises_error_on_no_product_to_receive(db_session, invento
 
 def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_service):
     [store] = seed_test_stores(session = db_session, no_of_stores = 1)
-
+    staff = seed_test_staff(session = db_session)
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
 
     payload = ReceiveStockRequest(
@@ -128,6 +135,7 @@ def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_s
         date = date.today(),
         source_party = "Prince",
         remarks="Testing things out",
+        recorded_by = staff.id,
         items = [
             ReceiveIssueItem(product_id = yoghurt.id, unit_id = yoghurt_other_unit.id, quantity = Decimal("-2"))
         ]
@@ -139,7 +147,7 @@ def test_receive_stock_raises_error_on_negative_quantity(db_session, inventory_s
 
 def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_service):
     [store] = seed_test_stores(session = db_session, no_of_stores = 1)
-
+    staff = seed_test_staff(session = db_session)
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
 
     payload = ReceiveStockRequest(
@@ -147,6 +155,7 @@ def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_servi
         date = date.today(),
         source_party = "Prince",
         remarks="Testing things out",
+        recorded_by = staff.id,
         items = [
             ReceiveIssueItem(product_id = yoghurt.id, unit_id = yoghurt_other_unit.id, quantity = Decimal("0"))
         ]
@@ -159,7 +168,7 @@ def test_receive_stock_raises_error_on_zero_quantity(db_session, inventory_servi
 
 def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service, mock_unit_service):
     [store] = seed_test_stores(session = db_session, no_of_stores = 1)
-
+    staff = seed_test_staff(session = db_session)
     achi_base_unit, achi_other_unit, achi, achi_multiplier_to_base = setup_achi(session = db_session)
     yoghurt_base_unit, yoghurt_other_unit, yoghurt, yoghurt_multiplier_to_base = setup_yoghurt_plain(session = db_session)
 
@@ -178,6 +187,7 @@ def test_receive_stock_atomic_transaction_rollback(db_session, inventory_service
         date = date.today(),
         source_party = "Odumeje",
         remarks = identifying_remarks,
+        recorded_by = staff.id,
         items = [
             ReceiveIssueItem(product_id=yoghurt.id, unit_id = yoghurt_other_unit.id, quantity = Decimal("2")),
             ReceiveIssueItem(product_id=achi.id, unit_id = achi_other_unit.id, quantity = Decimal("2")),

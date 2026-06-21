@@ -97,7 +97,7 @@ class StockService:
             stock_balance.quantity = running_balance
     
 
-    def update_historical_stockmovement(self, movement_id:int, new_quantity_delta:Decimal, operator_name: str, remarks: str):
+    def update_historical_stockmovement(self, movement_id:int, new_quantity_delta:Decimal, recorded_by: int, remarks: str):
         # this allows store keepers to update a previously recorded stock movement..
         # the rurnning balances of stock movements following that one will be recalculated
         transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
@@ -122,13 +122,13 @@ class StockService:
             stock_movement.quantity_delta = new_quantity_delta
 
             intervention_log = InterventionLog(
+                recorded_by = recorded_by,
                 store_id = stock_movement.store_id,
                 product_id = stock_movement.product_id,
                 source_action_type = ActionType.IN_PLACE_EDIT,
                 concerned_movement_id = stock_movement.id,
                 old_value_snapshot = old_quantity_delta,
                 new_value_snapshot = new_quantity_delta,
-                changed_by = operator_name,
                 remarks = remarks
             )
 
@@ -140,7 +140,7 @@ class StockService:
 
 
  
-    def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  operator_name:str, remarks: Optional[str] = None) -> StockMovement:
+    def insert_and_link_historical_movement(self, store_id: int, product_id: int, associated_stocktake_id:int, movement_type: MovementType, quantity_delta: Decimal, movement_date: date,  recorded_by: int, remarks: Optional[str] = None) -> StockMovement:
         # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product
         # (e.g. my stockmovement records say I should have 43tins of milk, but my physical inventory is 40tins of milk.. I'd have do a StockTake, recording 40tins as my new StockBalance),
         # since stock takes are usually initially inexplainable,
@@ -159,6 +159,7 @@ class StockService:
             self.session.execute(lock_statement)
                         
             explanatory_stock_movement = StockMovement( #the linking to associated_stocktake_id will not be done in this method but in associate_stock_movement_to_stocktake(), where proper validation will be carried out before linking the stock movement records
+                recorded_by = recorded_by,
                 store_id = store_id,
                 product_id = product_id,
                 movement_type = movement_type,
@@ -172,24 +173,24 @@ class StockService:
 
             self.recalculate(store_id = store_id, product_id = product_id, from_movement_date = movement_date)
             
-            self.associate_stock_movement_to_stocktake(movement_id = explanatory_stock_movement.id, stocktake_id=associated_stocktake_id, operator_name = operator_name)
+            self.associate_stock_movement_to_stocktake(movement_id = explanatory_stock_movement.id, stocktake_id=associated_stocktake_id, recorded_by = recorded_by)
             
             return explanatory_stock_movement
 
 
-    def associate_stock_movement_to_stocktake(self, movement_id: int, stocktake_id: int, operator_name:str):
+    def associate_stock_movement_to_stocktake(self, movement_id: int, stocktake_id: int, recorded_by:int):
         # stock takes refers to updates to StockBalance for a product that is usually not explainable by the StockMovement records for that product
         # (e.g. my stockmovement records say I should have 43tins of milk, but my physical inventory is 40tins of milk.. I'd have do a StockTake, recording 40tins as my new StockBalance),
         # since stock takes are usually initially inexplainable,
         # this method allows for linking stock_movements that may help to explain a stock take, to that stock take
-        self._mutate_stocktake_association(mutation_type=AssociationMutationType.LINK, movement_id = movement_id, stocktake_id = stocktake_id, operator_name=operator_name)
+        self._mutate_stocktake_association(mutation_type=AssociationMutationType.LINK, movement_id = movement_id, stocktake_id = stocktake_id, recorded_by = recorded_by)
     
 
-    def remove_association_from_stock_movement(self, movement_id:int, operator_name:str):
-        self._mutate_stocktake_association(mutation_type=AssociationMutationType.UNLINK, movement_id = movement_id, operator_name = operator_name)
+    def remove_association_from_stock_movement(self, movement_id:int, recorded_by:int):
+        self._mutate_stocktake_association(mutation_type=AssociationMutationType.UNLINK, movement_id = movement_id, recorded_by = recorded_by)
 
 
-    def _mutate_stocktake_association(self, movement_id: int, operator_name: str, mutation_type: AssociationMutationType, stocktake_id:Optional[int] = None):
+    def _mutate_stocktake_association(self, movement_id: int, recorded_by: int, mutation_type: AssociationMutationType, stocktake_id:Optional[int] = None):
         # This method was created to apply DRY principle on certain methods.. thus, it may need to be evaluated in context to be understood i.e. in the context of the caller methtods
         # At the time of initial creation, it was meant to serve for both linking and unlinking stocktake records with other stockmovement records that helped explain them(the stocktakes)
         transaction_context = (
@@ -210,7 +211,6 @@ class StockService:
             if not stock_movement:
                 raise AssociateStockMovementError(f"stock_movement with id={movement_id} does not exist")
             
-            defualt_remark = None
             stocktake_to_associate_with = None # should be set only for mutation_type == AssociationMutationType.UNLINK
 
             if mutation_type == AssociationMutationType.UNLINK:
@@ -247,7 +247,7 @@ class StockService:
                 source_action_type = ActionType.REMOVE_ASSOCIATION if mutation_type == AssociationMutationType.UNLINK else ActionType.EXPLAIN_DISCREPANCY,
                 concerned_movement_id = stock_movement.id,
                 new_value_snapshot = -1,
-                changed_by = operator_name,
+                recorded_by = recorded_by,
                 remarks = default_remark
             )
 
