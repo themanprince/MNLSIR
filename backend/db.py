@@ -20,6 +20,7 @@ class Store(Base):
 
     id = mapped_column(Integer, primary_key=True)
     name = mapped_column(String, nullable=False)
+    created_at = mapped_column(Date, default=date.today)
 
 
 class Product(Base):
