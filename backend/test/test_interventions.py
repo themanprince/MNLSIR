@@ -1,4 +1,4 @@
-# STOVK INTERVENTION REFERS TO MANUAL INFLUENCES TO THE AUTOMATIC FLOW OF INVENTORY
+# STOCK INTERVENTION REFERS TO MANUAL INFLUENCES TO THE AUTOMATIC FLOW OF INVENTORY
 # E.G. by doing a stocktake to override the stock balance arrived at by the stock movement flow
 # e.g. by editing a stockmovement record, causing a recalculation of the stock movement records
 import pytest

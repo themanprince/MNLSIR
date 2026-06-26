@@ -54,7 +54,7 @@ def seed_conversion_rule(session: Session, product_id: int, unit_id:int, multipl
 def setup_yoghurt_plain(session: Session):
     base_unit = seed_test_unit(session = session, name="piece", symbol="pcs")
     other_unit = seed_test_unit(session = session, name="carton", symbol="ctn")
-    product = seed_test_product(session = session, name="Yoghurt Plain", sku="yoghurt-plain", base_unit_id=base_unit.id)
+    product = seed_test_product(session = session, name="Yoghurt Plain", sku="yoghurt_plain", base_unit_id=base_unit.id)
     
     multiplier_to_base = Decimal("10")
     seed_conversion_rule(session = session, product_id = product.id, unit_id=other_unit.id, multiplier_to_base=multiplier_to_base)

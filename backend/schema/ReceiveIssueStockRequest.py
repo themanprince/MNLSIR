@@ -16,4 +16,4 @@ class ReceiveStockRequest(ReceiveIssueStockRequest):
     source_party: str
 
 class IssueStockRequest(ReceiveIssueStockRequest):
-    dest_party: str
+    dest_party: str #destination party ... who are the products issued to
