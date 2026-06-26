@@ -28,7 +28,7 @@ class Product(Base):
 
     id = mapped_column(Integer, primary_key = True)
     name = mapped_column(String, nullable=False)
-    sku = mapped_column(String, unique=True)
+    sku = mapped_column(String, unique=True, nullable=False)
     base_unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
 
 
