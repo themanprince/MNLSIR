@@ -20,7 +20,7 @@ class LedgerService:
     
     def get_stock_balances(self, store_id: int, sort_order: SortOrder = SortOrder.ALPHABETICAL_ORDER, limit: int = 50, offset:int = 0):
         query = self.session.query(Product.id, Product.name, StockBalance.quantity, Unit.symbol)
-        query = query.join(StockBalance).join(Product).join(Unit)
+        query = query.join(StockBalance).join(Unit)
         query = query.filter(StockBalance.store_id == store_id)
         if sort_order and sort_order != SortOrder.NO_ORDER:
             query = query.order_by(SORT_MECHANISM[sort_order])
