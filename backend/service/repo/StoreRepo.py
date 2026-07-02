@@ -15,4 +15,7 @@ class StoreRepo:
         session.add(store)
         session.commit()
         session.refresh(store)
-        return store
+        return {
+            "store_id": store.id,
+            "store_name": store.name
+        }
