@@ -6,6 +6,7 @@ from service.InventoryService import InventoryService
 from schema.ReceiveIssueStockRequest import ReceiveStockRequest, IssueStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
 from service.LedgerService import LedgerService, SortOrder
+from exceptions import GetStockBalanceError
 from random import random
 from datetime import date
 from decimal import Decimal
@@ -60,7 +61,7 @@ def products(db_session, inventory_service, store_and_unit_and_staff):
 
 def test_get_stock_balances_returns_correct_records_in_alphabetical_order_by_default(ledger_service, products, store_and_unit_and_staff):
 
-    store, unit, staff = store_and_unit_and_staff
+    store, _, _ = store_and_unit_and_staff
 
     stock_balances = ledger_service.get_stock_balances(store_id=store.id)
 
@@ -71,3 +72,13 @@ def test_get_stock_balances_returns_correct_records_in_alphabetical_order_by_def
         assert stock_balances[i][1] == expected_order[i][0] #product_name
         assert pytest.approx(stock_balances[i][2]) == pytest.approx(Decimal(expected_order[i][2])) #expected quantity
     
+
+def test_get_stock_balances_raises_error_on_none_or_invalid_store_id(ledger_service, store_and_unit_and_staff):
+    with pytest.raises(GetStockBalanceError):
+        ledger_service.get_stock_balances(store_id = None)
+    
+    with pytest.raises(GetStockBalanceError):
+        ledger_service.get_stock_balances(store_id = 988)
+    
+    store, _, _ = store_and_unit_and_staff
+    stock_balances = ledger_service.get_stock_balances(store_id = store.id) #no errors on using valid store_id

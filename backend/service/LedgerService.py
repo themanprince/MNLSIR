@@ -2,7 +2,8 @@
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select, asc, desc
-from db import StockMovement, Product, StockBalance, Unit
+from db import Store, StockMovement, Product, StockBalance, Unit
+from exceptions import GetStockBalanceError
 from enum import Enum
 
 
@@ -19,10 +20,17 @@ class LedgerService:
         self.session = session
     
     def get_stock_balances(self, store_id: int, sort_order: SortOrder = SortOrder.ALPHABETICAL_ORDER, limit: int = 50, offset:int = 0):
+        if not store_id:
+            raise GetStockBalanceError("Please pass in a store_id")
+
+        store = self.session.query(Store).filter_by(id = store_id).first()
+        if not store:
+            raise GetStockBalanceError("Please pass in a VALID valid store id")
+        
         query = self.session.query(Product.id, Product.name, StockBalance.quantity, Unit.symbol)
         query = query.join(StockBalance).join(Unit)
         query = query.filter(StockBalance.store_id == store_id)
-        if sort_order and sort_order != SortOrder.NO_ORDER:
+        if sort_order and (sort_order != SortOrder.NO_ORDER) and (sort_order in SORT_MECHANISM):
             query = query.order_by(SORT_MECHANISM[sort_order])
         query = query.offset(offset).limit(limit)
         result = query.all()
