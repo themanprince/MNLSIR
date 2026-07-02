@@ -12,3 +12,9 @@ class UpdateStockMovementError(Exception):
 
 class AssociateStockMovementError(Exception):
     pass
+
+class GetStockBalanceError(Exception):
+    pass
+
+class CreateStoreError(Exception):
+    pass
