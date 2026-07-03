@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from db import get_session
-from schema.StockBalance import StockBalanceOut
+from schema.StockBalanceOut import StockBalanceOut
 from service.LedgerService import LedgerService, SortOrder
 
 
