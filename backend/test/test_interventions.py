@@ -97,7 +97,7 @@ def test_stocktake_fails_on_attempt_to_use_non_existent_store_id(db_session, inv
             product_id=yoghurt.id,
             target_quantity = 50,
             remarks = "Doing stock take with invalid store id",
-            recorded_by = staff.id
+            recorded_by = staff.id,
         )
 
 def test_update_historical_stockmovement_recalculates_forward_and_creates_log_FOR_POSITIVE_QUANTITY(db_session, stock_service):
