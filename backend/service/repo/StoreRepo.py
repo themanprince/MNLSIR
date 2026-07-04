@@ -21,3 +21,12 @@ class StoreRepo:
             store_id = store.id,
             store_name = store.name
         )
+    
+
+    @classmethod
+    def get_all_stores(cls, session: Session):
+        all_stores = session.query(Store).all()
+        return [
+            {"store_id": store.id, "store_name": store.name}
+            for store in all_stores
+        ]

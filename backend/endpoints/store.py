@@ -13,3 +13,11 @@ async def create_store(store_name, session = Depends(get_session)):
         return store_details
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@StoreRouter.get("/all")
+async def get_all_stores(session = Depends(get_session)):
+    try:
+        return StoreRepo.get_all_stores(session = session)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
