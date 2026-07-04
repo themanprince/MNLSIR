@@ -10,7 +10,7 @@ from service.StockService import StockService
 from db import StockMovement, MovementType, InterventionLog, ActionType, StockBalance
 from schema.ReceiveIssueStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
-from exceptions import UpdateStockMovementError, AssociateStockMovementError
+from exceptions import UpdateStockMovementError, AssociateStockMovementError, SubmitStockTakeError
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -59,6 +59,46 @@ def test_doing_stocktake_can_serve_as_baseline_when_no_records_exist(db_session,
     stock_balance = db_session.query(StockBalance).filter(StockBalance.store_id == store.id, StockBalance.product_id == yoghurt.id).first()
     assert stock_balance.quantity == quantity
 
+
+def test_stocktake_fails_on_attempt_to_use_non_existent_product_id(db_session, inventory_service):
+    store = seed_test_stores(session = db_session, no_of_stores=1)[0]
+    staff = seed_test_staff(session=db_session)
+
+    with pytest.raises(SubmitStockTakeError):
+        inventory_service.submit_stocktake(
+            product_id=999,
+            store_id = store.id,
+            target_quantity = 50,
+            remarks = "Doing stock take with invalid product id",
+            recorded_by = staff.id
+        )
+
+def test_stocktake_fails_on_attempt_to_use_non_existent_staff_id(db_session, inventory_service):
+    store = seed_test_stores(session = db_session, no_of_stores=1)[0]
+    _, _, yoghurt, _ = setup_yoghurt_plain(session = db_session)    
+    
+    with pytest.raises(SubmitStockTakeError):
+        inventory_service.submit_stocktake(
+            recorded_by = 999,
+            product_id=yoghurt.id,
+            store_id = store.id,
+            target_quantity = 50,
+            remarks = "Doing stock take with invalid staff id"
+        )
+
+
+def test_stocktake_fails_on_attempt_to_use_non_existent_store_id(db_session, inventory_service):
+    _, _, yoghurt, _ = setup_yoghurt_plain(session = db_session)
+    staff = seed_test_staff(session=db_session)
+
+    with pytest.raises(SubmitStockTakeError):
+        inventory_service.submit_stocktake(
+            store_id = 999,
+            product_id=yoghurt.id,
+            target_quantity = 50,
+            remarks = "Doing stock take with invalid store id",
+            recorded_by = staff.id
+        )
 
 def test_update_historical_stockmovement_recalculates_forward_and_creates_log_FOR_POSITIVE_QUANTITY(db_session, stock_service):
     #Here, I'll test editting a stock movement with POSITIVE quantity_delta

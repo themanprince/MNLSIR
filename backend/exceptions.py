@@ -18,3 +18,6 @@ class GetStockBalanceError(Exception):
 
 class CreateStoreError(Exception):
     pass
+
+class SubmitStockTakeError(Exception):
+    pass
