@@ -1,10 +1,11 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from db import Document, DocumentType, DocumentLine, StockMovement, MovementType, StockBalance, InterventionLog, ActionType
+from db import Document, DocumentType, DocumentLine, StockMovement, MovementType, StockBalance, InterventionLog, ActionType, Store, Staff, Product
 from schema.ReceiveIssueStockRequest import ReceiveStockRequest, IssueStockRequest
 from service.UnitService import UnitService
 from service.StockService import StockService
 from exceptions import ReceiveIssueStockError
+from exceptions import SubmitStockTakeError
 from datetime import date
 from decimal import Decimal
 
@@ -112,6 +113,19 @@ class InventoryService:
         # this handles some scenarios as follows
         # 1. the scenario where store keeper needs to update digital stock balance of a product to align with its physical stock balance, in cases of observed but inexplainable discrepancies
         # 2. fresh inventory taking
+
+        store = self.session.query(Store).filter(Store.id == store_id).first()
+        if not store:
+            raise SubmitStockTakeError(f"Store with id {store_id} does not exist")
+        
+        staff = self.session.query(Staff).filter(Staff.id == recorded_by).first()
+        if not staff:
+            raise SubmitStockTakeError(f"Staff with id {recorded_by} does not exist")
+        
+        product = self.session.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise SubmitStockTakeError(f"Product with id {product_id} does not exist")
+        
         transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
             self.session.begin_nested()
             if self.session.in_transaction()
