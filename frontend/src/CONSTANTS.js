@@ -33,8 +33,26 @@ export const PRODUCT_LIST_COPY = {
     inputLabel: "Product name",
     inputPlaceholder: "e.g. Yogurt 500ml",
     unitLabel: "Default unit",
-    unitPlaceholder: "e.g. pcs",
+    unitPlaceholder: "Select a unit",
     submitLabel: "Create product"
+};
+
+export const ALLOWED_PRODUCT_UNITS = ["pcs", "box", "carton", "crate", "bag", "kg", "l", "bottle", "pack"];
+
+export const STOCK_TAKE_COPY = {
+    heading: "Record a stock take",
+    description: "Capture the current inventory level for a store and product so balances can be tracked consistently.",
+    storeLabel: "Store",
+    productLabel: "Product",
+    quantityLabel: "Quantity",
+    unitLabel: "Unit",
+    dateLabel: "Stock take date",
+    remarksLabel: "Remarks",
+    remarksPlaceholder: "Optional notes about the count",
+    submitLabel: "Save stock take",
+    emptyTitle: "No stock takes yet",
+    emptyMessage: "Once a stock take is saved, it will appear here as a reliable history of baseline inventory.",
+    summaryLabel: "Current balance"
 };
 
 export const NAVIGATION_ROUTES = [

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createProduct, getAllProducts } from "@/api";
-import { PRODUCT_LIST_COPY } from "@/CONSTANTS";
+import { ALLOWED_PRODUCT_UNITS, PRODUCT_LIST_COPY } from "@/CONSTANTS";
 
 function formatProductName(productName) {
     if (!productName) return "Unnamed product";
@@ -134,17 +134,22 @@ export default function ProductsPage() {
                             <label htmlFor="product-unit" className="text-sm font-semibold text-slate-700">
                                 {PRODUCT_LIST_COPY.unitLabel}
                             </label>
-                            <input
+                            <select
                                 id="product-unit"
-                                type="text"
                                 value={unit}
                                 onChange={(event) => {
                                     setUnit(event.target.value);
                                     if (error) setError("");
                                 }}
-                                placeholder={PRODUCT_LIST_COPY.unitPlaceholder}
                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                            />
+                            >
+                                <option value="">{PRODUCT_LIST_COPY.unitPlaceholder}</option>
+                                {ALLOWED_PRODUCT_UNITS.map((allowedUnit) => (
+                                    <option key={allowedUnit} value={allowedUnit}>
+                                        {allowedUnit}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

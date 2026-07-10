@@ -3,6 +3,7 @@ import { BACKEND_URL } from "@/CONSTANTS";
 const MOCK_STORE_STORAGE_KEY = "mock-store-list";
 const MOCK_PRODUCT_STORAGE_KEY = "mock-product-list";
 const MOCK_BALANCE_STORAGE_KEY = "mock-stock-balances";
+const MOCK_STOCK_TAKE_STORAGE_KEY = "mock-stock-takes";
 
 async function parseResponse(response) {
     const contentType = response.headers.get("content-type") || "";
@@ -124,6 +125,20 @@ function persistBalanceState(storeId, balancePayload) {
     writeMockState(MOCK_BALANCE_STORAGE_KEY, storedBalances);
 }
 
+function getStockTakesState() {
+    const storedStockTakes = readMockState(MOCK_STOCK_TAKE_STORAGE_KEY, null);
+
+    if (Array.isArray(storedStockTakes)) {
+        return storedStockTakes;
+    }
+
+    return [];
+}
+
+function persistStockTakesState(stockTakes) {
+    writeMockState(MOCK_STOCK_TAKE_STORAGE_KEY, stockTakes);
+}
+
 export function clearMockApiState() {
     const storage = getBrowserStorage();
 
@@ -134,6 +149,7 @@ export function clearMockApiState() {
     storage.removeItem(MOCK_STORE_STORAGE_KEY);
     storage.removeItem(MOCK_PRODUCT_STORAGE_KEY);
     storage.removeItem(MOCK_BALANCE_STORAGE_KEY);
+    storage.removeItem(MOCK_STOCK_TAKE_STORAGE_KEY);
 }
 
 export async function getAllStores() {
@@ -208,6 +224,71 @@ export async function createProduct(productName, unit) {
     persistProductsState(products);
 
     return parseResponse(createMockResponse(newProduct, 201));
+}
+
+export async function submitStockTake({ storeId, productId, targetQuantity, stocktakeDate, remarks = "", recordedBy = 1 }) {
+    await delay(600);
+
+    const numericStoreId = Number(storeId);
+    const numericProductId = Number(productId);
+    const quantityValue = Number(targetQuantity);
+    const stores = getStoresState();
+    const products = getProductsState();
+
+    if (!stores.some((store) => store.store_id === numericStoreId)) {
+        return parseResponse(createMockResponse({ detail: "Store not found." }, 404));
+    }
+
+    if (!products.some((product) => product.product_id === numericProductId)) {
+        return parseResponse(createMockResponse({ detail: "Product not found." }, 404));
+    }
+
+    if (!Number.isFinite(quantityValue) || quantityValue < 0) {
+        return parseResponse(createMockResponse({ detail: "Quantity must be zero or greater." }, 400));
+    }
+
+    const product = products.find((item) => item.product_id === numericProductId);
+    const balancePayload = getBalanceState(numericStoreId);
+    const existingItem = balancePayload.items.find((item) => item.product_id === numericProductId);
+
+    const nextItem = {
+        product_id: numericProductId,
+        product_name: product.product_name,
+        available_quantity: quantityValue,
+        unit: product.default_unit || "pcs"
+    };
+
+    const nextItems = existingItem
+        ? balancePayload.items.map((item) => (item.product_id === numericProductId ? nextItem : item))
+        : [...balancePayload.items, nextItem];
+
+    const newStockTake = {
+        stocktake_id: Date.now(),
+        store_id: numericStoreId,
+        product_id: numericProductId,
+        target_quantity: quantityValue,
+        stocktake_date: stocktakeDate || new Date().toISOString().slice(0, 10),
+        remarks,
+        recorded_by: recordedBy,
+        movement_type: "STOCKTAKE"
+    };
+
+    const stockTakes = getStockTakesState();
+    stockTakes.push(newStockTake);
+    persistStockTakesState(stockTakes);
+
+    persistBalanceState(numericStoreId, {
+        ...balancePayload,
+        items: nextItems
+    });
+
+    return parseResponse(createMockResponse(newStockTake, 201));
+}
+
+export async function getStockTakes() {
+    await delay(350);
+
+    return parseResponse(createMockResponse(getStockTakesState()));
 }
 
 export async function getStockBalances(store_id, sort = "alpha", offset = 0, limit = 50) {
