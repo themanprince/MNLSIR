@@ -16,6 +16,14 @@ export const CREATE_STORE_COPY = {
     errorFallback: "We could not create that store. Please try again."
 };
 
+export const STORE_LIST_COPY = {
+    heading: "Existing stores",
+    description: "Review the full store directory and keep your inventory hierarchy easy to navigate.",
+    emptyTitle: "No stores yet",
+    emptyMessage: "Create your first store to begin organizing inventory operations.",
+    countLabel: "stores available"
+};
+
 export const NAVIGATION_ROUTES = [
     {
         label: "Stock Balances",
@@ -27,11 +35,13 @@ export const NAVIGATION_ROUTES = [
         )
     },
     {
-        label: "Create Store",
-        href: "/stores/create",
+        label: "Stores",
+        href: "/stores",
         icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5v-9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 12l9-4.5" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 12v9" />
             </svg>
         )
     }
