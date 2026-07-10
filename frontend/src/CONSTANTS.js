@@ -32,9 +32,15 @@ export const PRODUCT_LIST_COPY = {
     countLabel: "products available",
     inputLabel: "Product name",
     inputPlaceholder: "e.g. Yogurt 500ml",
-    unitLabel: "Default unit",
-    unitPlaceholder: "Select a unit",
-    submitLabel: "Create product"
+    unitLabel: "Base unit",
+    unitPlaceholder: "Select a base unit",
+    submitLabel: "Create product",
+    conversionLabel: "Unit conversions",
+    conversionDescription: "Define how other units map into the selected base unit so stock operations stay consistent.",
+    addConversionLabel: "Add conversion",
+    conversionUnitLabel: "Conversion unit",
+    conversionAmountLabel: "Multiplier to base",
+    noConversionsText: "No conversions configured yet."
 };
 
 export const ALLOWED_PRODUCT_UNITS = ["pcs", "box", "carton", "crate", "bag", "kg", "l", "bottle", "pack"];

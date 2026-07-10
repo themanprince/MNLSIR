@@ -3,10 +3,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createProduct, getAllProducts } from "@/api";
 import { ALLOWED_PRODUCT_UNITS, PRODUCT_LIST_COPY } from "@/CONSTANTS";
+import FeedbackAlert from "@/components/FeedbackAlert";
+import ProductUnitConversionForm from "@/components/ProductUnitConversionForm";
 
+// Keep the product card labels readable without changing the stored values.
 function formatProductName(productName) {
     if (!productName) return "Unnamed product";
     return productName.replace(/(^\w|\s+\w)/g, (match) => match.toUpperCase());
+}
+
+// Each new conversion row gets a unique id so React can manage it safely.
+function createConversionRule() {
+    return {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        unit: "",
+        multiplierToBase: ""
+    };
 }
 
 export default function ProductsPage() {
@@ -16,7 +28,10 @@ export default function ProductsPage() {
     const [error, setError] = useState("");
     const [feedback, setFeedback] = useState("");
     const [productName, setProductName] = useState("");
-    const [unit, setUnit] = useState("");
+    const [baseUnit, setBaseUnit] = useState("");
+    const [conversionRules, setConversionRules] = useState([createConversionRule()]);
+
+    // Keep the list of products in sync after create/update actions.
 
     const loadProducts = useCallback(async () => {
         try {
@@ -46,11 +61,23 @@ export default function ProductsPage() {
         return products.length.toString();
     }, [products]);
 
+    function updateConversionRule(ruleId, field, value) {
+        setConversionRules((currentRules) => currentRules.map((rule) => (rule.id === ruleId ? { ...rule, [field]: value } : rule)));
+    }
+
+    function addConversionRule() {
+        setConversionRules((currentRules) => [...currentRules, createConversionRule()]);
+    }
+
+    function removeConversionRule(ruleId) {
+        setConversionRules((currentRules) => currentRules.filter((rule) => rule.id !== ruleId));
+    }
+
     async function handleSubmit(event) {
         event.preventDefault();
 
         const trimmedName = productName.trim();
-        const trimmedUnit = unit.trim();
+        const trimmedBaseUnit = baseUnit.trim();
 
         if (trimmedName.length < 2) {
             setError("Product names should be at least 2 characters long.");
@@ -58,8 +85,31 @@ export default function ProductsPage() {
             return;
         }
 
-        if (!trimmedUnit) {
-            setError("Please add a default unit for the product.");
+        if (!trimmedBaseUnit) {
+            setError("Please add a base unit for the product.");
+            setFeedback("");
+            return;
+        }
+
+        const normalizedConversions = conversionRules
+            .filter((rule) => rule.unit && rule.multiplierToBase !== "")
+            .map((rule) => ({
+                unit: rule.unit.trim().toLowerCase(),
+                multiplier_to_base: Number(rule.multiplierToBase)
+            }));
+
+        const invalidConversion = normalizedConversions.find((rule) => !Number.isFinite(rule.multiplier_to_base) || rule.multiplier_to_base <= 0);
+
+        if (invalidConversion) {
+            setError("Each conversion needs a positive multiplier to the base unit.");
+            setFeedback("");
+            return;
+        }
+
+        const duplicateConversionUnits = normalizedConversions.some((rule, index) => normalizedConversions.findIndex((candidate) => candidate.unit === rule.unit) !== index);
+
+        if (duplicateConversionUnits) {
+            setError("Please avoid repeating the same conversion unit more than once.");
             setFeedback("");
             return;
         }
@@ -68,9 +118,13 @@ export default function ProductsPage() {
             setIsSubmitting(true);
             setError("");
             setFeedback("");
-            await createProduct(trimmedName, trimmedUnit);
+            await createProduct(trimmedName, trimmedBaseUnit, {
+                baseUnit: trimmedBaseUnit,
+                conversions: normalizedConversions
+            });
             setProductName("");
-            setUnit("");
+            setBaseUnit("");
+            setConversionRules([createConversionRule()]);
             setFeedback("Product created successfully.");
             await loadProducts();
         } catch (submitError) {
@@ -121,6 +175,7 @@ export default function ProductsPage() {
                                 id="product-name"
                                 type="text"
                                 value={productName}
+                                required
                                 onChange={(event) => {
                                     setProductName(event.target.value);
                                     if (error) setError("");
@@ -136,9 +191,10 @@ export default function ProductsPage() {
                             </label>
                             <select
                                 id="product-unit"
-                                value={unit}
+                                value={baseUnit}
+                                required
                                 onChange={(event) => {
-                                    setUnit(event.target.value);
+                                    setBaseUnit(event.target.value);
                                     if (error) setError("");
                                 }}
                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
@@ -152,8 +208,27 @@ export default function ProductsPage() {
                             </select>
                         </div>
 
+                        <ProductUnitConversionForm
+                            baseUnit={baseUnit}
+                            setBaseUnit={setBaseUnit}
+                            conversionRules={conversionRules}
+                            updateConversionRule={updateConversionRule}
+                            addConversionRule={addConversionRule}
+                            removeConversionRule={removeConversionRule}
+                            allowedUnits={ALLOWED_PRODUCT_UNITS}
+                            unitLabel={PRODUCT_LIST_COPY.unitLabel}
+                            unitPlaceholder={PRODUCT_LIST_COPY.unitPlaceholder}
+                            conversionLabel={PRODUCT_LIST_COPY.conversionLabel}
+                            conversionDescription={PRODUCT_LIST_COPY.conversionDescription}
+                            addConversionLabel={PRODUCT_LIST_COPY.addConversionLabel}
+                            conversionUnitLabel={PRODUCT_LIST_COPY.conversionUnitLabel}
+                            conversionAmountLabel={PRODUCT_LIST_COPY.conversionAmountLabel}
+                            noConversionsText={PRODUCT_LIST_COPY.noConversionsText}
+                            helperText="The base unit and conversion rules are stored with the product so later stock operations can stay consistent."
+                        />
+
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm text-slate-500">Units are stored alongside each product to support later stock operations.</p>
+                            <p className="text-sm text-slate-500">The base unit and conversion rules are stored with the product so later stock operations can stay consistent.</p>
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
@@ -163,17 +238,8 @@ export default function ProductsPage() {
                             </button>
                         </div>
 
-                        {error ? (
-                            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                                {error}
-                            </div>
-                        ) : null}
-
-                        {feedback ? (
-                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                                {feedback}
-                            </div>
-                        ) : null}
+                        {error ? <FeedbackAlert kind="error" message={error} /> : null}
+                        {feedback ? <FeedbackAlert kind="success" message={feedback} /> : null}
                     </form>
                 </div>
 
@@ -206,7 +272,8 @@ export default function ProductsPage() {
                             {products.map((product, index) => {
                                 const productName = formatProductName(product.product_name || product.name || "");
                                 const productId = product.product_id ?? product.id ?? index + 1;
-                                const unit = product.default_unit || product.unit || "pcs";
+                                const baseUnit = product.base_unit || product.default_unit || product.unit || "pcs";
+                                const conversions = Array.isArray(product.unit_conversions) ? product.unit_conversions : [];
 
                                 return (
                                     <article
@@ -224,8 +291,19 @@ export default function ProductsPage() {
                                                 </div>
                                             </div>
                                             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
-                                                {unit}
+                                                {baseUnit}
                                             </span>
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {conversions.length > 0 ? conversions.map((conversion, conversionIndex) => (
+                                                <span key={`${productId}-${conversionIndex}`} className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                                    1 {conversion.unit} = {conversion.multiplier_to_base ?? conversion.multiplierToBase} {baseUnit}
+                                                </span>
+                                            )) : (
+                                                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
+                                                    No conversions configured yet
+                                                </span>
+                                            )}
                                         </div>
                                     </article>
                                 );

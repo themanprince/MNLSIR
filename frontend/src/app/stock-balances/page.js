@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createStore, getAllProducts, getAllStores, getStockBalances, getStockTakes, submitStockTake } from "@/api";
+import { getAllProducts, getAllStores, getStockBalances, getStockTakes, submitStockTake } from "@/api";
 import { STOCK_TAKE_COPY } from "@/CONSTANTS";
+import FeedbackAlert from "@/components/FeedbackAlert";
 
+// Keep the displayed names readable without changing the underlying values.
 function formatStoreName(storeName) {
     if (!storeName) return "Unnamed store";
     return storeName.replace(/(^\w|\s+\w)/g, (match) => match.toUpperCase());
@@ -12,6 +14,22 @@ function formatStoreName(storeName) {
 function formatProductName(productName) {
     if (!productName) return "Unnamed product";
     return productName.replace(/(^\w|\s+\w)/g, (match) => match.toUpperCase());
+}
+
+function getAvailableUnits(product) {
+    if (!product) {
+        return [];
+    }
+
+    const units = new Set([product.base_unit || product.default_unit || product.unit || "pcs"]);
+
+    (product.unit_conversions || []).forEach((conversion) => {
+        if (conversion?.unit) {
+            units.add(conversion.unit);
+        }
+    });
+
+    return Array.from(units);
 }
 
 export default function StockBalancesPage() {
@@ -25,11 +43,13 @@ export default function StockBalancesPage() {
     const [feedback, setFeedback] = useState("");
     const [storeId, setStoreId] = useState("");
     const [productId, setProductId] = useState("");
+    const [unit, setUnit] = useState("");
     const [quantity, setQuantity] = useState("");
     const [stocktakeDate, setStocktakeDate] = useState(new Date().toISOString().slice(0, 10));
     const [remarks, setRemarks] = useState("");
 
-    const loadData = useCallback(async () => {
+    // Load the catalog and recent stock takes once so the form stays responsive.
+    const loadCatalogData = useCallback(async () => {
         try {
             setIsLoading(true);
             setError("");
@@ -66,14 +86,6 @@ export default function StockBalancesPage() {
             if (normalizedProducts.length > 0 && !productId) {
                 setProductId(String(normalizedProducts[0].product_id ?? normalizedProducts[0].id));
             }
-
-            if (normalizedStores.length > 0) {
-                const balanceResponse = await getStockBalances(normalizedStores[0].store_id ?? normalizedStores[0].id);
-                const normalizedBalances = Array.isArray(balanceResponse?.items)
-                    ? balanceResponse.items
-                    : [];
-                setStockBalances(normalizedBalances);
-            }
         } catch (loadError) {
             setError(loadError.message || "We could not load inventory data yet.");
         } finally {
@@ -81,9 +93,50 @@ export default function StockBalancesPage() {
         }
     }, [productId, storeId]);
 
+    const loadStoreBalances = useCallback(async (selectedStoreId) => {
+        if (!selectedStoreId) {
+            setStockBalances([]);
+            return;
+        }
+
+        try {
+            const balanceResponse = await getStockBalances(selectedStoreId);
+            const normalizedBalances = Array.isArray(balanceResponse?.items)
+                ? balanceResponse.items
+                : [];
+            setStockBalances(normalizedBalances);
+        } catch (loadError) {
+            setError(loadError.message || "We could not load stock balances yet.");
+        }
+    }, []);
+
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        loadCatalogData();
+    }, [loadCatalogData]);
+
+    useEffect(() => {
+        if (storeId) {
+            loadStoreBalances(storeId);
+        }
+    }, [loadStoreBalances, storeId]);
+
+    useEffect(() => {
+        const selectedProduct = products.find((product) => String(product.product_id ?? product.id) === String(productId));
+        const availableUnits = getAvailableUnits(selectedProduct);
+
+        if (availableUnits.length === 0) {
+            setUnit("");
+            return;
+        }
+
+        setUnit((currentUnit) => {
+            if (currentUnit && availableUnits.includes(currentUnit)) {
+                return currentUnit;
+            }
+
+            return availableUnits[0];
+        });
+    }, [productId, products]);
 
     const currentBalanceSummary = useMemo(() => {
         if (!storeId || stockBalances.length === 0) {
@@ -101,7 +154,7 @@ export default function StockBalancesPage() {
     async function handleSubmit(event) {
         event.preventDefault();
 
-        const trimmedQuantity = Number(quantity);
+        const trimmedQuantity = quantity.trim();
 
         if (!storeId || !productId) {
             setError("Please select both a store and a product.");
@@ -109,8 +162,22 @@ export default function StockBalancesPage() {
             return;
         }
 
-        if (!Number.isFinite(trimmedQuantity) || trimmedQuantity < 0) {
-            setError("Quantity must be zero or greater.");
+        if (!trimmedQuantity) {
+            setError("Quantity is required.");
+            setFeedback("");
+            return;
+        }
+
+        const parsedQuantity = Number(trimmedQuantity);
+
+        if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0) {
+            setError("Quantity must be greater than zero.");
+            setFeedback("");
+            return;
+        }
+
+        if (!unit) {
+            setError("Please select the unit used for this stock take.");
             setFeedback("");
             return;
         }
@@ -122,15 +189,17 @@ export default function StockBalancesPage() {
             await submitStockTake({
                 storeId,
                 productId,
-                targetQuantity: trimmedQuantity,
+                targetQuantity: parsedQuantity,
                 stocktakeDate,
                 remarks,
-                recordedBy: 1
+                recordedBy: 1,
+                unit
             });
             setQuantity("");
             setRemarks("");
             setFeedback("Stock take saved successfully.");
-            await loadData();
+            await loadCatalogData();
+            await loadStoreBalances(storeId);
         } catch (submitError) {
             setError(submitError.message || "We could not save the stock take.");
         } finally {
@@ -179,21 +248,19 @@ export default function StockBalancesPage() {
                                 <select
                                     id="store-select"
                                     value={storeId}
+                                    required
                                     onChange={(event) => setStoreId(event.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                                 >
-                                    {stores.length === 0 ? (
-                                        <option value="">No stores available</option>
-                                    ) : (
-                                        stores.map((store) => {
-                                            const id = store.store_id ?? store.id;
-                                            return (
-                                                <option key={id} value={id}>
-                                                    {formatStoreName(store.store_name || store.name || "")}
-                                                </option>
-                                            );
-                                        })
-                                    )}
+                                    <option value="">Select a store</option>
+                                    {stores.map((store) => {
+                                        const id = store.store_id ?? store.id;
+                                        return (
+                                            <option key={id} value={id}>
+                                                {formatStoreName(store.store_name || store.name || "")}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             </div>
 
@@ -204,21 +271,19 @@ export default function StockBalancesPage() {
                                 <select
                                     id="product-select"
                                     value={productId}
+                                    required
                                     onChange={(event) => setProductId(event.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                                 >
-                                    {products.length === 0 ? (
-                                        <option value="">No products available</option>
-                                    ) : (
-                                        products.map((product) => {
-                                            const id = product.product_id ?? product.id;
-                                            return (
-                                                <option key={id} value={id}>
-                                                    {formatProductName(product.product_name || product.name || "")}
-                                                </option>
-                                            );
-                                        })
-                                    )}
+                                    <option value="">Select a product</option>
+                                    {products.map((product) => {
+                                        const id = product.product_id ?? product.id;
+                                        return (
+                                            <option key={id} value={id}>
+                                                {formatProductName(product.product_name || product.name || "")}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             </div>
                         </div>
@@ -231,26 +296,48 @@ export default function StockBalancesPage() {
                                 <input
                                     id="quantity-input"
                                     type="number"
-                                    min="0"
-                                    step="0.01"
+                                    min="0.0001"
+                                    step="0.0001"
                                     value={quantity}
+                                    required
                                     onChange={(event) => setQuantity(event.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="stocktake-date" className="text-sm font-semibold text-slate-700">
-                                    {STOCK_TAKE_COPY.dateLabel}
+                                <label htmlFor="unit-select" className="text-sm font-semibold text-slate-700">
+                                    {STOCK_TAKE_COPY.unitLabel}
                                 </label>
-                                <input
-                                    id="stocktake-date"
-                                    type="date"
-                                    value={stocktakeDate}
-                                    onChange={(event) => setStocktakeDate(event.target.value)}
+                                <select
+                                    id="unit-select"
+                                    value={unit}
+                                    required
+                                    onChange={(event) => setUnit(event.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                                />
+                                >
+                                    <option value="">Select a unit</option>
+                                    {getAvailableUnits(products.find((product) => String(product.product_id ?? product.id) === String(productId))).map((availableUnit) => (
+                                        <option key={availableUnit} value={availableUnit}>
+                                            {availableUnit}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="stocktake-date" className="text-sm font-semibold text-slate-700">
+                                {STOCK_TAKE_COPY.dateLabel}
+                            </label>
+                            <input
+                                id="stocktake-date"
+                                type="date"
+                                value={stocktakeDate}
+                                required
+                                onChange={(event) => setStocktakeDate(event.target.value)}
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            />
                         </div>
 
                         <div className="space-y-2">
@@ -278,17 +365,8 @@ export default function StockBalancesPage() {
                             </button>
                         </div>
 
-                        {error ? (
-                            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                                {error}
-                            </div>
-                        ) : null}
-
-                        {feedback ? (
-                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                                {feedback}
-                            </div>
-                        ) : null}
+                        {error ? <FeedbackAlert kind="error" message={error} /> : null}
+                        {feedback ? <FeedbackAlert kind="success" message={feedback} /> : null}
                     </form>
                 </div>
 
