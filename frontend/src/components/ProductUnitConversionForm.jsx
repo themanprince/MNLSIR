@@ -26,13 +26,6 @@ export default function ProductUnitConversionForm({
                     <h3 className="text-sm font-semibold text-slate-900">{conversionLabel}</h3>
                     <p className="text-sm text-slate-500">{conversionDescription}</p>
                 </div>
-                <button
-                    type="button"
-                    onClick={addConversionRule}
-                    className="rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
-                >
-                    {addConversionLabel}
-                </button>
             </div>
 
             <div className="mt-4 space-y-3">
@@ -97,10 +90,21 @@ export default function ProductUnitConversionForm({
                         </button>
                     </div>
                 ))}
-
+                
                 {conversionRules.length === 0 ? (
                     <p className="text-sm text-slate-500">{noConversionsText}</p>
                 ) : null}
+
+                <div className="w-full flex flex-row justify-end">
+                    <button
+                        type="button"
+                        onClick={addConversionRule}
+                        className="rounded-full border border-blue-200 bg-blue-500 px-3 py-2 text-sm font-semibold text-white-700 transition hover:border-blue-300 hover:bg-blue-100"
+                    >
+                        {addConversionLabel}
+                    </button>
+                </div>
+
             </div>
 
             {helperText ? <p className="mt-4 text-sm text-slate-500">{helperText}</p> : null}
