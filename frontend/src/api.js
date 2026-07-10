@@ -1,6 +1,7 @@
 import { BACKEND_URL } from "@/CONSTANTS";
 
 const MOCK_STORE_STORAGE_KEY = "mock-store-list";
+const MOCK_PRODUCT_STORAGE_KEY = "mock-product-list";
 const MOCK_BALANCE_STORAGE_KEY = "mock-stock-balances";
 
 async function parseResponse(response) {
@@ -81,17 +82,26 @@ function getSeedStores() {
 function getStoresState() {
     const storedStores = readMockState(MOCK_STORE_STORAGE_KEY, null);
 
-    if (Array.isArray(storedStores) && storedStores.length > 0) {
-        return storedStores;
-    }
-
-    const seedStores = getSeedStores();
-    writeMockState(MOCK_STORE_STORAGE_KEY, seedStores);
-    return seedStores;
+    return storedStores || [];
+    
 }
 
 function persistStoresState(stores) {
     writeMockState(MOCK_STORE_STORAGE_KEY, stores);
+}
+
+function getProductsState() {
+    const storedProducts = readMockState(MOCK_PRODUCT_STORAGE_KEY, null);
+
+    if (Array.isArray(storedProducts)) {
+        return storedProducts;
+    }
+
+    return [];
+}
+
+function persistProductsState(products) {
+    writeMockState(MOCK_PRODUCT_STORAGE_KEY, products);
 }
 
 function getBalanceState(storeId) {
@@ -104,13 +114,7 @@ function getBalanceState(storeId) {
 
     return {
         store_id: storeId,
-        items: [
-            {
-                product_name: "Sample product",
-                available_quantity: 0,
-                unit: "pcs"
-            }
-        ]
+        items: []
     };
 }
 
@@ -128,6 +132,7 @@ export function clearMockApiState() {
     }
 
     storage.removeItem(MOCK_STORE_STORAGE_KEY);
+    storage.removeItem(MOCK_PRODUCT_STORAGE_KEY);
     storage.removeItem(MOCK_BALANCE_STORAGE_KEY);
 }
 
@@ -163,6 +168,46 @@ export async function createStore(storeName) {
     persistStoresState(stores);
 
     return parseResponse(createMockResponse(newStore, 201));
+}
+
+export async function getAllProducts() {
+    await delay(350);
+
+    const products = getProductsState();
+    return parseResponse(createMockResponse(products));
+}
+
+export async function createProduct(productName, unit) {
+    await delay(600);
+
+    const normalizedName = (productName || "").trim().toLowerCase();
+    const normalizedUnit = (unit || "").trim().toLowerCase();
+
+    if (!normalizedName) {
+        return parseResponse(createMockResponse({ detail: "Product name is required." }, 400));
+    }
+
+    if (!normalizedUnit) {
+        return parseResponse(createMockResponse({ detail: "Product unit is required." }, 400));
+    }
+
+    const products = getProductsState();
+    const duplicateProduct = products.find((product) => product.product_name === normalizedName);
+
+    if (duplicateProduct) {
+        return parseResponse(createMockResponse({ detail: `Product already exists having name=${productName}` }, 409));
+    }
+
+    const newProduct = {
+        product_id: Date.now(),
+        product_name: normalizedName,
+        default_unit: normalizedUnit
+    };
+
+    products.push(newProduct);
+    persistProductsState(products);
+
+    return parseResponse(createMockResponse(newProduct, 201));
 }
 
 export async function getStockBalances(store_id, sort = "alpha", offset = 0, limit = 50) {
