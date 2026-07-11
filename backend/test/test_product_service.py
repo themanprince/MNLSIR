@@ -1,0 +1,97 @@
+import pytest
+
+from .conftest import db_session
+from .helpers import seed_test_unit
+from service.ProductService import ProductService
+from db import ProductUnitConversion, Product
+from exceptions import CreateConversionRuleError
+from schema.UnitConversionRule import UnitConversionRule
+from decimal import Decimal
+
+
+@pytest.fixture
+def seeded_units(db_session):
+    base_unit = seed_test_unit(session = db_session, name = "base", symbol = "bs")
+    pack = seed_test_unit(session = db_session, name = "pack", symbol = "pk")
+    carton = seed_test_unit(session = db_session, name="carton", symbol = "ctn")
+
+    return base_unit, pack, carton
+
+
+def test_create_product_with_conversion_works(db_session, seeded_units):
+    product_service = ProductService(session = db_session)
+    base_unit, pack, carton = seeded_units
+
+    product_name = "Milo 400g"
+    sku="milo_400g"
+    base_unit_id = base_unit.id
+    conversions = [
+        UnitConversionRule(unit_id = pack.id, multiplier_to_base = Decimal("12.0000")),
+        UnitConversionRule(unit_id = carton.id, multiplier_to_base = Decimal("48.0000"))
+    ]
+
+    product = product_service.create_product(
+        product_name = product_name,
+        product_sku=sku,
+        base_unit_id = base_unit_id,
+        conversions = conversions
+    )
+
+    assert product.id is not None
+    assert product.sku == sku
+    assert product.base_unit_id == base_unit.id
+
+    conversions_stored = db_session.query(ProductUnitConversion).filter_by(product_id = product.id).all()
+    assert len(conversions_stored) == len(conversions)
+
+    carton_conversion_rule = next(rule for rule in conversions_stored if rule.unit_id == carton.id)
+    assert carton_conversion_rule.multiplier_to_base == conversions[1].multiplier_to_base
+
+
+def test_create_product_enforces_atomicity_on_conversion_failure(db_session, seeded_units):
+    product_service = ProductService(session = db_session)
+    base_unit, pack, carton = seeded_units
+    unexisting_unit_id = 999
+
+    product_name = "Milo 400g"
+    sku="milo_400g"
+    base_unit_id = base_unit.id
+    conversions = [
+        UnitConversionRule(unit_id = pack.id, multiplier_to_base = Decimal("12.0000")),
+        UnitConversionRule(unit_id = unexisting_unit_id, multiplier_to_base = Decimal("48.0000"))
+    ]
+
+    with pytest.raises(CreateConversionRuleError):
+        product = product_service.create_product(
+            product_name = product_name,
+            product_sku=sku,
+            base_unit_id = base_unit_id,
+            conversions = conversions
+        )
+
+    product_in_db = db_session.query(Product).filter_by(sku = sku).first()
+    assert product_in_db is None
+
+    conversion_rules_count = db_session.query(ProductUnitConversion).count()
+    assert conversion_rules_count == 0
+
+
+def test_create_product_with_no_conversion_rule_is_allowed(db_session, seeded_units):
+    product_service = ProductService(session = db_session)
+    base_unit, pack, carton = seeded_units
+
+    product_name = "Milo 400g"
+    sku="milo_400g"
+    base_unit_id = base_unit.id
+    conversions = [] #nada, zero, nun', zilch
+
+    product = product_service.create_product(
+        product_name = product_name,
+        product_sku=sku,
+        base_unit_id = base_unit_id,
+        conversions = conversions
+    )
+
+    assert product.id is not None
+    conversion_rules = db_session.query(ProductUnitConversion).filter_by(product_id = product.id).all()
+    assert len(conversion_rules) == 0

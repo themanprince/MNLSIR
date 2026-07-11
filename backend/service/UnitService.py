@@ -55,5 +55,6 @@ class UnitService:
 
         self.session.add(conversion_rule)
         self.session.flush()
+        self.session.refresh(conversion_rule)
 
         return conversion_rule
