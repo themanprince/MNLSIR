@@ -51,8 +51,15 @@ class ProductService:
             self.session.add(product)
             self.session.flush()
             self.session.refresh(product)
+            product_payload = {
+                "name": product.name,
+                "sku": product.sku,
+                "base_unit_id": product.base_unit_id,
+                "unit_conversions": []
+            }
             for conversion_rule in conversions:
                 self.unit_service.create_conversion_rule(product_id = product.id, unit_id = conversion_rule.unit_id, multiplier_to_base = conversion_rule.multiplier_to_base)
+                product_payload["unit_conversions"].append({"unit_id": conversion_rule.unit_id, "multiplier_to_base": conversion_rule.multiplier_to_base})
             
-            return product
+        return product_payload
         
