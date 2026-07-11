@@ -13,7 +13,7 @@ SORT_MECHANISM = {  # mapping of SortOrder selection to sorting mechanism
     SortOrder.ALPHABETICAL_ORDER : Product.name.asc()
 }
 
-class ProductService:
+class ProductRepo:
     def __init__(self, session: Session):
         self.session = session
         self.unit_service = UnitService(session = session)
@@ -40,7 +40,7 @@ class ProductService:
         return payload_to_return
 
     
-    def create_product(self, product_name: str, product_sku: str, base_unit_id: int, conversions: list[UnitConversionRule]):
+    def create_product(self, product_name: str, product_sku: str, base_unit_id: int, conversion_rules: list[UnitConversionRule]):
         transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
             self.session.begin_nested()
             if self.session.in_transaction()
@@ -52,12 +52,13 @@ class ProductService:
             self.session.flush()
             self.session.refresh(product)
             product_payload = {
+                "id": product.id,
                 "name": product.name,
                 "sku": product.sku,
                 "base_unit_id": product.base_unit_id,
                 "unit_conversions": []
             }
-            for conversion_rule in conversions:
+            for conversion_rule in conversion_rules:
                 self.unit_service.create_conversion_rule(product_id = product.id, unit_id = conversion_rule.unit_id, multiplier_to_base = conversion_rule.multiplier_to_base)
                 product_payload["unit_conversions"].append({"unit_id": conversion_rule.unit_id, "multiplier_to_base": conversion_rule.multiplier_to_base})
             

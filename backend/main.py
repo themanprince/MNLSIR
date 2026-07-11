@@ -4,6 +4,7 @@ from db import Base, engine
 from endpoints.ledger import LedgerRouter
 from endpoints.store import StoreRouter
 from endpoints.inventory import InventoryRouter
+from endpoints.product import ProductRouter
 
 
 @asynccontextmanager
@@ -16,6 +17,7 @@ app = FastAPI(lifespan = lifespan)
 app.include_router(LedgerRouter)
 app.include_router(StoreRouter)
 app.include_router(InventoryRouter)
+app.include_router(ProductRouter)
 
 if __name__ == "__main__":
 	import uvicorn
