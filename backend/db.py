@@ -19,7 +19,7 @@ class Store(Base):
     __tablename__ = "stores"
 
     id = mapped_column(Integer, primary_key=True)
-    name = mapped_column(String, nullable=False)
+    name = mapped_column(String, unique=True, nullable=False)
     created_at = mapped_column(Date, default=date.today)
 
 
@@ -27,7 +27,7 @@ class Product(Base):
     __tablename__ = "products"
 
     id = mapped_column(Integer, primary_key = True)
-    name = mapped_column(String, nullable=False)
+    name = mapped_column(String, unique=True, nullable=False)
     sku = mapped_column(String, unique=True, nullable=False)
     base_unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
 

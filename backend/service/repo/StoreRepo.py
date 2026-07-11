@@ -7,6 +7,8 @@ from exceptions import CreateStoreError
 class StoreRepo:
     @classmethod
     def create_new_store(cls, session:Session, store_name: str):
+        store_name = store_name.lower()
+
         existing_store_with_same_name = session.query(Store).filter_by(name = store_name.lower()).first()
         if existing_store_with_same_name:
             raise CreateStoreError(f"Store already exists having name={store_name}")

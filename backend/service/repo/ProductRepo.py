@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from service.UnitService import UnitService
 from schema.UnitConversionRule import UnitConversionRule
 from db import Product, ProductUnitConversion
+from exceptions import CreateProductError
 from enum import Enum
 
 
@@ -41,7 +42,17 @@ class ProductRepo:
 
     
     def create_product(self, product_name: str, product_sku: str, base_unit_id: int, conversion_rules: list[UnitConversionRule]):
-        transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
+        product_name = product_name.lower()
+
+        product_with_same_name_in_db = self.session.query(Product).filter_by(name = product_name).first()
+        product_with_same_sku_in_db = self.session.query(Product).filter_by(sku = product_sku).first()
+
+        if product_with_same_name_in_db:
+            raise CreateProductError(f"Product with name {product_name} already exists in DB")
+        elif product_with_same_sku_in_db:
+            raise CreateProductError(f"Product with SKU {product_sku} already exists in DB")
+        
+        transaction_context = (
             self.session.begin_nested()
             if self.session.in_transaction()
             else self.session.begin()

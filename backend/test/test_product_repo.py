@@ -4,7 +4,7 @@ from .conftest import db_session
 from .helpers import seed_test_unit
 from service.repo.ProductRepo import ProductRepo
 from db import ProductUnitConversion, Product
-from exceptions import CreateConversionRuleError
+from exceptions import CreateConversionRuleError, CreateProductError
 from schema.UnitConversionRule import UnitConversionRule
 from decimal import Decimal
 
@@ -78,7 +78,7 @@ def test_create_product_enforces_atomicity_on_conversion_failure(db_session, see
 
 def test_create_product_with_no_conversion_rule_is_allowed(db_session, seeded_units):
     product_repo = ProductRepo(session = db_session)
-    base_unit, pack, carton = seeded_units
+    base_unit, _, _ = seeded_units
 
     product_name = "Milo 400g"
     sku="milo_400g"
@@ -95,3 +95,47 @@ def test_create_product_with_no_conversion_rule_is_allowed(db_session, seeded_un
     assert product["id"] is not None
     conversion_rules = db_session.query(ProductUnitConversion).filter_by(product_id = product["id"]).all()
     assert len(conversion_rules) == 0
+
+
+def test_create_product_fails_on_attempt_to_create_product_with_same_name(db_session, seeded_units):
+    product_repo = ProductRepo(session = db_session)
+    base_unit, _, _ = seeded_units
+
+    product_name = "Milo 400g"
+
+    product = product_repo.create_product(
+        product_name = product_name,
+        product_sku="milo_400g",
+        base_unit_id = base_unit.id,
+        conversion_rules = []
+    )
+
+    with pytest.raises(CreateProductError):
+        product = product_repo.create_product(
+            product_name = product_name,
+            product_sku="another_sku",
+            base_unit_id = base_unit.id,
+            conversion_rules = []
+        )
+
+
+def test_create_product_fails_on_attempt_to_create_product_with_same_sku(db_session, seeded_units):
+    product_repo = ProductRepo(session = db_session)
+    base_unit, _, _ = seeded_units
+
+    product_sku="milo_400g"
+
+    product = product_repo.create_product(
+        product_name = "Milo 400g",
+        product_sku = product_sku,
+        base_unit_id = base_unit.id,
+        conversion_rules = []
+    )
+
+    with pytest.raises(CreateProductError):
+        product = product_repo.create_product(
+            product_name = "another product name",
+            product_sku=product_sku,
+            base_unit_id = base_unit.id,
+            conversion_rules = []
+        )

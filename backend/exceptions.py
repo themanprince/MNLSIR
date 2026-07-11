@@ -21,3 +21,6 @@ class CreateStoreError(Exception):
 
 class SubmitStockTakeError(Exception):
     pass
+
+class CreateProductError(Exception):
+    pass
