@@ -24,3 +24,6 @@ class SubmitStockTakeError(Exception):
 
 class CreateProductError(Exception):
     pass
+
+class CreateUnitError(Exception):
+    pass

@@ -2,14 +2,47 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db import ProductUnitConversion, Product, Unit
-from exceptions import UnitConversionError, CreateConversionRuleError
+from exceptions import CreateUnitError, UnitConversionError, CreateConversionRuleError
 
 
 class UnitService:
 
     def __init__(self, session: Session):
         self.session = session
-    
+
+
+    def create_unit(self, unit_name: str, unit_symbol: str):
+        unit_name = unit_name.lower()
+        unit_symbol = unit_symbol.lower()
+
+        existing_unit_with_same_name = self.session.query(Unit).filter_by(name = unit_name).first()
+        existing_unit_with_same_symbol = self.session.query(Unit).filter_by(symbol = unit_symbol).first()
+
+        if existing_unit_with_same_name:
+            raise CreateUnitError(f"Unit already exists having name={unit_name}")
+        if existing_unit_with_same_symbol:
+            raise CreateUnitError(f"Unit already exists having symbol={unit_symbol}")
+        
+        unit = Unit(name = unit_name, symbol = unit_symbol)
+        self.session.add(unit)
+        self.session.commit()
+        self.session.refresh(unit)
+        
+        return {
+            "unit_id": unit.id,
+            "unit_name": unit.name,
+            "unit_symbol": unit.symbol
+        }
+
+
+    def get_all_units(self):
+        all_units = self.session.query(Unit).order_by(Unit.asc()).all()
+        return [
+            {"unit_id": unit.id, "unit_name": unit.name, "unit_symbol": unit.symbol}
+            for unit in all_units
+        ]
+
+
     def to_base(self, product_id: int, quantity: Decimal, from_unit_id: int):
         
         product = self.session.query(Product).filter_by(id = product_id).first()
