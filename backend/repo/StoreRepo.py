@@ -13,7 +13,6 @@ class StoreRepo:
         if existing_store_with_same_name:
             raise CreateStoreError(f"Store already exists having name={store_name}")
         
-        store_name = store_name.lower()
         store = Store(name = store_name)
         session.add(store)
         session.commit()

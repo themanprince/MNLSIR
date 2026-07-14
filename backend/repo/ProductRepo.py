@@ -44,6 +44,7 @@ class ProductRepo:
     
     def create_product(self, product_name: str, product_sku: str, base_unit_id: int, conversion_rules: list[UnitConversionRule]):
         product_name = product_name.lower()
+        product_sku = product_sku.lower()
 
         product_with_same_name_in_db = self.session.query(Product).filter_by(name = product_name).first()
         product_with_same_sku_in_db = self.session.query(Product).filter_by(sku = product_sku).first()
