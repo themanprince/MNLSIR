@@ -4,9 +4,10 @@ from .UnitConversionRule import UnitConversionRule
 
 
 class ProductPayload(BaseModel):
-    base_unit_id: int
+    id: int
     name: str
     sku: str
+    base_unit_id: int
     unit_conversions: List[UnitConversionRule]
 
     model_config = {

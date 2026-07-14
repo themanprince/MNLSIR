@@ -30,6 +30,7 @@ class ProductRepo:
 
         for product in all_products:
             product_payload = {
+                "id": product.id,
                 "name": product.name,
                 "sku": product.sku,
                 "base_unit_id": product.base_unit_id

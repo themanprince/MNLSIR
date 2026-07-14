@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Body, HTTPException
 from db import get_session
-from service.repo.StoreRepo import StoreRepo
+from backend.repo.StoreRepo import StoreRepo
 from schema.CreateStoreResponse import CreateStoreResponse
 
 
