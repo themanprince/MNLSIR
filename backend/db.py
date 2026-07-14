@@ -1,5 +1,6 @@
 from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column
 from sqlalchemy import create_engine, ForeignKey, CheckConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
+from sqlalchemy.dialects.sqlite.json import JSON
 from datetime import datetime, date
 import enum
 
@@ -13,6 +14,7 @@ class Staff(Base):
     first_name = mapped_column(String, nullable=False)
     last_name = mapped_column(String, nullable=False)
     other_names = mapped_column(String, nullable=True)
+    other_details = mapped_column(JSON)
 
 
 class Store(Base):
