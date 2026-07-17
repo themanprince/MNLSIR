@@ -1,4 +1,5 @@
 import { BACKEND_URL } from "@/CONSTANTS";
+import { getSKU } from "./helpers";
 
 const MOCK_STORE_STORAGE_KEY = "mock-store-list";
 const MOCK_PRODUCT_STORAGE_KEY = "mock-product-list";
@@ -378,6 +379,51 @@ class MockInventoryApiAdapter {
     }
 }
 
+class MainInventoryApiAdapter {
+    constructor() {
+    }
+
+    async getAllStores() {
+
+    }
+
+    async createStore(storeName) {
+    }
+
+    async getAllProducts() {
+    }
+
+    async createProduct(productName, baseUnitID, conversionRules = []) {
+        const productSKU = getSKU(productName);
+
+        const payload = JSON.stringify({
+            "product_name": productName,
+            "product_sku": productSKU,
+            "base_unit_id": baseUnitID,
+            "conversion_rules": conversionRules
+        });
+
+        const response = await fetch(`${BACKEND_URL}/product`, {
+            "method": "POST",
+            "body": payload
+        });
+
+        return await response.json();
+    }
+
+    async submitStockTake({ storeId, productId, targetQuantity, stocktakeDate, remarks = "", recordedBy = 1, unit = null }) {
+    }
+
+    async getStockTakes() {
+    }
+
+    async getStockBalances(store_id, sort = "alpha", offset = 0, limit = 50) {
+    }
+
+    async getStockBalanceSummary(store_id) {
+    }
+}
+
 class InventoryApiClient {
     constructor(adapter) {
         this.adapter = adapter;
@@ -456,6 +502,25 @@ export async function getStockBalances(store_id, sort = "alpha", offset = 0, lim
 
 export async function getStockBalanceSummary(store_id) {
     return inventoryApi.getStockBalanceSummary(store_id);
+}
+
+export async function getAllUnits() {
+    const response = await fetch(`${BACKEND_URL}/unit/all`);
+
+    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
+
+    return await response.json();
+}
+
+export async function createUnit(unitName, unitSymbol) {
+    const response = await fetch(`${BACKEND_URL}/unit`, {
+        "method": "POST",
+        "body": JSON.stringify({"unit_name": unitName, "unit_symbol": unitSymbol})
+    });
+
+    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
+
+    return await response.json();
 }
 
 export { BACKEND_URL, InventoryApiClient, MockInventoryApiAdapter };
