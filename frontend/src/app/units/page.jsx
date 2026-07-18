@@ -7,6 +7,7 @@ import { getAllUnits, createUnit } from "@/api.js";
 import PageSection  from "@/components/PageSection";
 import SectionCard from "@/components/SectionCard";
 import GenericForm from "@/components/GenericForm";
+import UnitList from "@/components/UnitList";
 
 
 export default function UnitsPage() {
@@ -47,7 +48,7 @@ export default function UnitsPage() {
     return (
         <div className="space-y-8">
             <PageHero
-                badge="Units Catalog"
+                badge={UNIT_PAGE_COPY.badge}
                 title={UNIT_PAGE_COPY.heading}
                 description={UNIT_PAGE_COPY.description}
                 summaryValue={summaryValue}
@@ -55,11 +56,11 @@ export default function UnitsPage() {
             />
 
             <PageSection>
-                <SectionCard title="Create Unit" description="Add a new unit to the unit registry">
+                <SectionCard title={UNIT_PAGE_COPY.createSectionTitle} description={UNIT_PAGE_COPY.createSectionDescription}>
                     <GenericForm
-                        submitBtnLabel={"Create Unit"}
-                        submitSuccessMsg={"Unit Created Successfully"}
-                        helperText={"After creating this unit, you can set conversion rules of products to involve this unit"}
+                        submitBtnLabel={UNIT_PAGE_COPY.createUnitBtnLabel}
+                        submitSuccessMsg={UNIT_PAGE_COPY.submitSuccessMsg}
+                        helperText={UNIT_PAGE_COPY.helperText}
                         onSubmit={async (event) => {
                             event.preventDefault();
                             await createUnit(unitFormState.unitName, unitFormState.unitSymbol);
@@ -82,6 +83,16 @@ export default function UnitsPage() {
                                 }
                             ]
                         }
+                    />
+                </SectionCard>
+
+                <SectionCard title={UNIT_PAGE_COPY.heading} description={UNIT_PAGE_COPY.description}>
+                    <UnitList
+                        units={units}
+                        isLoading={unitsQueryState.loading}
+                        error={unitsQueryState.error}
+                        emptyTitle={UNIT_PAGE_COPY.emptyTitle}
+                        emptyMessage={UNIT_PAGE_COPY.emptyMessage}
                     />
                 </SectionCard>
             </PageSection>

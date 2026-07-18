@@ -62,9 +62,18 @@ export const STOCK_TAKE_COPY = {
 };
 
 export const UNIT_PAGE_COPY = {
+    "badge": "Units Catalog",
     "heading": "Units",
     "description": "View and manage units",
-    "countLabel": "Existing Units"
+    "countLabel": "Existing Units",
+    "createSectionTitle": "Create Unit",
+    "createSectionDescription": "Add a new unit to the unit registry",
+    "createUnitBtnLabel": "Create Unit",
+    "submitSuccessMsg": "Unit Created Successfully",
+    "helperText": "After creating this unit, you can set conversion rules of products to involve this unit",
+    "emptyTitle": "No units created yet",
+    "emptyMessage": "Create your first unit to begin organizing inventory operations.",
+    
 }
 
 export const NAVIGATION_ROUTES = [
