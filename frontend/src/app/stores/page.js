@@ -20,20 +20,13 @@ export default function StoresPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [feedback, setFeedback] = useState("");
-    const [storeName, setStoreName] = useState("");
+    const [newStoreName, setNewStoreName] = useState("");
 
     const loadStores = useCallback(async () => {
         try {
             setIsLoading(true);
             setError("");
-            const response = await getAllStores();
-            const normalizedStores = Array.isArray(response)
-                ? response
-                : Array.isArray(response?.stores)
-                    ? response.stores
-                    : [];
-
-            setStores(normalizedStores);
+            setStores(await getAllStores());
         } catch (loadError) {
             setError(loadError.message || "We could not load the stores right now.");
         } finally {
@@ -53,20 +46,14 @@ export default function StoresPage() {
     async function handleSubmit(event) {
         event.preventDefault();
 
-        const trimmedName = storeName.trim();
-
-        if (trimmedName.length < 3) {
-            setError("Store names should be at least 3 characters long.");
-            setFeedback("");
-            return;
-        }
+        const storeToCreate = newStoreName.trim();
 
         try {
             setIsSubmitting(true);
             setError("");
             setFeedback("");
-            await createStore(trimmedName);
-            setStoreName("");
+            await createStore(storeToCreate);
+            setNewStoreName("");
             setFeedback(CREATE_STORE_COPY.successTitle);
             await loadStores();
         } catch (submitError) {
@@ -89,9 +76,9 @@ export default function StoresPage() {
             <PageSection>
                 <SectionCard title={CREATE_STORE_COPY.heading} description={CREATE_STORE_COPY.description}>
                     <StoreCreationForm
-                        storeName={storeName}
+                        storeName={newStoreName}
                         onStoreNameChange={(event) => {
-                            setStoreName(event.target.value);
+                            setNewStoreName(event.target.value);
                             if (error) setError("");
                         }}
                         isSubmitting={isSubmitting}
@@ -112,7 +99,6 @@ export default function StoresPage() {
                         error={error}
                         emptyTitle={STORE_LIST_COPY.emptyTitle}
                         emptyMessage={STORE_LIST_COPY.emptyMessage}
-                        formatStoreName={formatStoreName}
                     />
                 </SectionCard>
             </PageSection>

@@ -4,7 +4,7 @@ import EmptyState from "./EmptyState";
 import LoadingSkeletonList from "./LoadingSkeletonList";
 
 // Presentational list for stores. The page decides which data to pass in.
-export default function StoreList({ stores, isLoading, error, emptyTitle, emptyMessage, formatStoreName }) {
+export default function StoreList({ stores, isLoading, error, emptyTitle, emptyMessage }) {
     if (isLoading) {
         return <LoadingSkeletonList count={4} />;
     }
@@ -20,8 +20,8 @@ export default function StoreList({ stores, isLoading, error, emptyTitle, emptyM
     return (
         <div className="space-y-3">
             {stores.map((store, index) => {
-                const storeName = formatStoreName(store.store_name || store.name || "");
-                const storeId = store.store_id ?? store.id ?? index + 1;
+                const storeName = store["store_name"];
+                const storeId = store["store_id"];
 
                 return (
                     <article

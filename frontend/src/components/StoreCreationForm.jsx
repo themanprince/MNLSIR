@@ -7,7 +7,6 @@ export default function StoreCreationForm({
     storeName,
     onStoreNameChange,
     isSubmitting,
-    isReady,
     onSubmit,
     error,
     feedback,
@@ -36,7 +35,7 @@ export default function StoreCreationForm({
                 <p className="text-sm text-slate-500">{helperText}</p>
                 <button
                     type="submit"
-                    disabled={isSubmitting || !isReady}
+                    disabled={isSubmitting}
                     className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                     {isSubmitting ? "Creating..." : submitLabel}

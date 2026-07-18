@@ -473,11 +473,21 @@ export function clearMockApiState() {
 }
 
 export async function getAllStores() {
-    return inventoryApi.getAllStores();
+    const response = await fetch(`${BACKEND_URL}/store/all`);
+
+    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
+
+    return await response.json();
 }
 
 export async function createStore(storeName) {
-    return inventoryApi.createStore(storeName);
+    const response = await fetch(`${BACKEND_URL}/store/${storeName}`, {
+        "method": "POST"
+    });
+
+    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
+
+    return await response.json();
 }
 
 export async function getAllProducts() {
