@@ -1,3 +1,5 @@
 .vscode
 __pycache__
 *.db
+db_file.db
+.env
