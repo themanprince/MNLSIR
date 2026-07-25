@@ -2,8 +2,8 @@
 
 // Shared UI for capturing a product's base unit and optional conversion rules.
 export default function ProductUnitConversionForm({
-    baseUnit,
-    setBaseUnit,
+    baseUnitID,
+    onBaseUnitIDChange,
     conversionRules,
     updateConversionRule,
     addConversionRule,
@@ -34,16 +34,16 @@ export default function ProductUnitConversionForm({
                         {unitLabel}
                     </label>
                     <select
-                        id="product-unit"
-                        value={baseUnit}
                         required
-                        onChange={(event) => setBaseUnit(event.target.value)}
+                        id="product-unit"
+                        value={baseUnitID}
+                        onChange={onBaseUnitIDChange}
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     >
                         <option value="">{unitPlaceholder}</option>
-                        {allowedUnits.map((allowedUnit) => (
-                            <option key={allowedUnit} value={allowedUnit}>
-                                {allowedUnit}
+                        {allowedUnits.map((unit) => (
+                            <option key={unit["unit_symbol"]} value={unit["unit_id"]}>
+                                {`${unit["unit_name"]} (${unit["unit_symbol"]})`}
                             </option>
                         ))}
                     </select>
@@ -56,14 +56,14 @@ export default function ProductUnitConversionForm({
                                 {conversionUnitLabel}
                             </label>
                             <select
-                                value={rule.unit}
-                                onChange={(event) => updateConversionRule(rule.id, "unit", event.target.value)}
+                                value={rule["unit_id"]}
+                                onChange={(event) => updateConversionRule(rule.id, "unit_id", event.target.value)}
                                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                             >
-                                <option value="">Select a unit</option>
-                                {allowedUnits.filter((allowedUnit) => allowedUnit !== baseUnit || rule.unit === allowedUnit).map((allowedUnit) => (
-                                    <option key={allowedUnit} value={allowedUnit}>
-                                        {allowedUnit}
+                                <option value="">{unitPlaceholder}</option>
+                                {allowedUnits.filter((unit) => Number(unit.unitID) != Number(baseUnitID)).map((unit) => (
+                                    <option key={unit["unit_symbol"]} value={unit["unit_id"]}>
+                                        {`${unit["unit_name"]} (${unit["unit_symbol"]})`}
                                     </option>
                                 ))}
                             </select>

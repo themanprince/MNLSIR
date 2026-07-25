@@ -9,6 +9,7 @@ export default function GenericForm({controls, onSubmit, submitBtnLabel, submitS
         "error": "",
         "isSuccessful": false
     });
+    const [canShowFeedback, setCanShowFeedback] = useState(false);
 
     const controlsTransformed = controls.map((element, idx) => {
         let FormControl;
@@ -46,15 +47,17 @@ export default function GenericForm({controls, onSubmit, submitBtnLabel, submitS
 
     async function localOnSubmitWrapper(event) {
         event.preventDefault();
-        
+        setCanShowFeedback(false);
+
         try {
-            setFormState(prevState => ({...prevState, "isSubmitting": true}));
+            setFormState(prevState => ({...prevState, "error":"", "isSubmitting": true}));
             await onSubmit(event);
             setFormState(prevState => ({...prevState, "isSuccessful": true}));
         } catch(submitError) {
             setFormState(prevState => ({...prevState, "error": submitError.message || "Form Submission Failed"}));
         } finally {
             setFormState(prevState => ({...prevState, "isSubmitting": false}));
+            setCanShowFeedback(true);
         }
     }
 
@@ -74,8 +77,8 @@ export default function GenericForm({controls, onSubmit, submitBtnLabel, submitS
                 </button>
             </div>
 
-            {formState.error ? <FeedbackAlert kind="error" message={formState.error} /> : null}
-            {formState.isSuccessful ? <FeedbackAlert kind="success" message={submitSuccessMsg} /> : null}
+            {(canShowFeedback && formState.error) ? <FeedbackAlert kind="error" message={formState.error} /> : null}
+            {(canShowFeedback && formState.isSuccessful && ( ! formState.error)) ? <FeedbackAlert kind="success" message={submitSuccessMsg} /> : null}
         </form>
     );
 }

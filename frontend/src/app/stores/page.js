@@ -9,10 +9,6 @@ import SectionCard from "@/components/SectionCard";
 import StoreCreationForm from "@/components/StoreCreationForm";
 import StoreList from "@/components/StoreList";
 
-function formatStoreName(storeName) {
-    if (!storeName) return "Unnamed store";
-    return storeName.replace(/(^\w|\s+\w)/g, (match) => match.toUpperCase());
-}
 
 export default function StoresPage() {
     const [stores, setStores] = useState([]);

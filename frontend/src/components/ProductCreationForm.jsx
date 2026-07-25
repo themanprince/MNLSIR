@@ -7,8 +7,8 @@ import ProductUnitConversionForm from "./ProductUnitConversionForm";
 export default function ProductCreationForm({
     productName,
     onProductNameChange,
-    baseUnit,
-    onBaseUnitChange,
+    baseUnitID,
+    onBaseUnitIDChange,
     conversionRules,
     updateConversionRule,
     addConversionRule,
@@ -49,8 +49,8 @@ export default function ProductCreationForm({
             </div>
 
             <ProductUnitConversionForm
-                baseUnit={baseUnit}
-                setBaseUnit={onBaseUnitChange}
+                baseUnitID={baseUnitID}
+                onBaseUnitIDChange={onBaseUnitIDChange}
                 conversionRules={conversionRules}
                 updateConversionRule={updateConversionRule}
                 addConversionRule={addConversionRule}

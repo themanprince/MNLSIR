@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createProduct, getAllProducts } from "@/api";
-import { ALLOWED_PRODUCT_UNITS, PRODUCT_LIST_COPY } from "@/CONSTANTS";
+import { useGetUnits } from "@/hooks";
+import { PRODUCT_LIST_COPY, CREATE_PRODUCT_FORM_COPY } from "@/CONSTANTS";
 import PageHero from "@/components/PageHero";
 import PageSection from "@/components/PageSection";
 import ProductCatalog from "@/components/ProductCatalog";
@@ -15,39 +16,35 @@ function formatProductName(productName) {
     return productName.replace(/(^\w|\s+\w)/g, (match) => match.toUpperCase());
 }
 
-// Each new conversion row gets a unique id so React can manage it safely.
 function createConversionRule() {
     return {
-        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        unit: "",
-        multiplierToBase: ""
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, // Each new conversion row gets a unique id so React can manage it safely.
+        unitID: -1,
+        multiplierToBase: 0
     };
 }
 
 export default function ProductsPage() {
+    const [units, setUnits, unitsLoading, unitsLoadingError] = useGetUnits();
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [feedback, setFeedback] = useState("");
-    const [productName, setProductName] = useState("");
-    const [baseUnit, setBaseUnit] = useState("");
-    const [conversionRules, setConversionRules] = useState([createConversionRule()]);
+    const [nameOfProductToCreate, setNameOfProductToCreate] = useState("");
+    const [baseUnitIDOfProductToCreate, setBaseUnitIDOfProductToCreate] = useState(-1);
+    const [conversionRulesOfProductToCreate, setConversionRulesOfProductToCreate] = useState([createConversionRule()]);
 
-    // Keep the list of products in sync after create/update actions.
+    if(unitsLoadingError) {
+        throw new Error(`Error Loading Units --- ${unitsLoadingError}`);
+    }
 
     const loadProducts = useCallback(async () => {
+        // Keep the list of products in sync after create/update actions
         try {
             setIsLoading(true);
             setError("");
-            const response = await getAllProducts();
-            const normalizedProducts = Array.isArray(response)
-                ? response
-                : Array.isArray(response?.products)
-                    ? response.products
-                    : [];
-
-            setProducts(normalizedProducts);
+            setProducts(await getAllProducts());
         } catch (loadError) {
             setError(loadError.message || "We could not load the products right now.");
         } finally {
@@ -65,42 +62,42 @@ export default function ProductsPage() {
     }, [products]);
 
     function updateConversionRule(ruleId, field, value) {
-        setConversionRules((currentRules) => currentRules.map((rule) => (rule.id === ruleId ? { ...rule, [field]: value } : rule)));
+        setConversionRulesOfProductToCreate((currentRules) => currentRules.map((rule) => (rule.id === ruleId ? { ...rule, [field]: value } : rule)));
     }
 
     function addConversionRule() {
-        setConversionRules((currentRules) => [...currentRules, createConversionRule()]);
+        setConversionRulesOfProductToCreate((currentRules) => [...currentRules, createConversionRule()]);
     }
 
     function removeConversionRule(ruleId) {
-        setConversionRules((currentRules) => currentRules.filter((rule) => rule.id !== ruleId));
+        setConversionRulesOfProductToCreate((currentRules) => currentRules.filter((rule) => rule.id !== ruleId));
     }
 
     async function handleSubmit(event) {
         event.preventDefault();
 
-        const trimmedName = productName.trim();
-        const trimmedBaseUnit = baseUnit.trim();
+        const trimmedName = nameOfProductToCreate.trim();
 
-        if (trimmedName.length < 2) {
-            setError("Product names should be at least 2 characters long.");
-            setFeedback("");
-            return;
-        }
-
-        if (!trimmedBaseUnit) {
+        if (!baseUnitIDOfProductToCreate) {
             setError("Please add a base unit for the product.");
             setFeedback("");
             return;
         }
 
-        const normalizedConversions = conversionRules
-            .filter((rule) => rule.unit && rule.multiplierToBase !== "")
+        const normalizedConversions = conversionRulesOfProductToCreate
             .map((rule) => ({
-                unit: rule.unit.trim().toLowerCase(),
-                multiplier_to_base: Number(rule.multiplierToBase)
+                "unit_id": Number(rule.unitID),
+                "multiplier_to_base": Number(rule.multiplierToBase)
             }));
 
+        const emptyUnitOrMultiplierInConversion = normalizedConversions.find((rule) => (!rule["unit_id"]) || (!rule["multiplier_to_base"]));
+
+        if (emptyUnitOrMultiplierInConversion) {
+            setError("Each conversion needs a a value for unit and multiplier_to_base");
+            setFeedback("");
+            return;
+        }
+        
         const invalidConversion = normalizedConversions.find((rule) => !Number.isFinite(rule.multiplier_to_base) || rule.multiplier_to_base <= 0);
 
         if (invalidConversion) {
@@ -109,7 +106,7 @@ export default function ProductsPage() {
             return;
         }
 
-        const duplicateConversionUnits = normalizedConversions.some((rule, index) => normalizedConversions.findIndex((candidate) => candidate.unit === rule.unit) !== index);
+        const duplicateConversionUnits = normalizedConversions.some((rule, index) => normalizedConversions.findIndex((candidate) => candidate.unitID === rule.unitID) !== index);
 
         if (duplicateConversionUnits) {
             setError("Please avoid repeating the same conversion unit more than once.");
@@ -121,14 +118,11 @@ export default function ProductsPage() {
             setIsSubmitting(true);
             setError("");
             setFeedback("");
-            await createProduct(trimmedName, trimmedBaseUnit, {
-                baseUnit: trimmedBaseUnit,
-                conversions: normalizedConversions
-            });
-            setProductName("");
-            setBaseUnit("");
-            setConversionRules([createConversionRule()]);
+            await createProduct(trimmedName, baseUnitIDOfProductToCreate, normalizedConversions);
             setFeedback("Product created successfully.");
+            setNameOfProductToCreate("");
+            setBaseUnitIDOfProductToCreate(-1);
+            setConversionRulesOfProductToCreate([createConversionRule()]);
             await loadProducts();
         } catch (submitError) {
             setError(submitError.message || "We could not create that product.");
@@ -148,23 +142,21 @@ export default function ProductsPage() {
             />
 
             <PageSection>
-                <SectionCard title="Create a product" description="Add a product so it can be used across receipts, issues, and balance views.">
+                <SectionCard title={CREATE_PRODUCT_FORM_COPY.title} description={CREATE_PRODUCT_FORM_COPY.description}>
                     <ProductCreationForm
-                        productName={productName}
+                        productName={nameOfProductToCreate}
                         onProductNameChange={(event) => {
-                            setProductName(event.target.value);
-                            if (error) setError("");
+                            setNameOfProductToCreate(event.target.value);
                         }}
-                        baseUnit={baseUnit}
-                        onBaseUnitChange={(event) => {
-                            setBaseUnit(event.target.value);
-                            if (error) setError("");
+                        baseUnitID={baseUnitIDOfProductToCreate}
+                        onBaseUnitIDChange={(event) => {
+                            setBaseUnitIDOfProductToCreate(event.target.value);
                         }}
-                        conversionRules={conversionRules}
+                        conversionRules={conversionRulesOfProductToCreate}
                         updateConversionRule={updateConversionRule}
                         addConversionRule={addConversionRule}
                         removeConversionRule={removeConversionRule}
-                        allowedUnits={ALLOWED_PRODUCT_UNITS}
+                        allowedUnits={units}
                         isSubmitting={isSubmitting}
                         onSubmit={handleSubmit}
                         error={error}
@@ -174,7 +166,7 @@ export default function ProductsPage() {
                         unitLabel={PRODUCT_LIST_COPY.unitLabel}
                         unitPlaceholder={PRODUCT_LIST_COPY.unitPlaceholder}
                         submitLabel={PRODUCT_LIST_COPY.submitLabel}
-                        helperText="The base unit and conversion rules are stored with the product so later stock operations can stay consistent."
+                        helperText={PRODUCT_LIST_COPY.helperText}
                         conversionLabel={PRODUCT_LIST_COPY.conversionLabel}
                         conversionDescription={PRODUCT_LIST_COPY.conversionDescription}
                         addConversionLabel={PRODUCT_LIST_COPY.addConversionLabel}

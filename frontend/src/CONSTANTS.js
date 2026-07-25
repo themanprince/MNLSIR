@@ -4,77 +4,6 @@ export const APP_NAME = "Mazuka";
 export const APP_SUBTITLE = "Nigeria Limited";
 export const APP_SHORT_NAME = "MNLSIR";
 
-export const CREATE_STORE_COPY = {
-    heading: "Create a new store",
-    description: "Add a store to begin tracking stock movements, reconciliations, and balances from one consistent workspace.",
-    inputLabel: "Store name",
-    inputPlaceholder: "e.g. Lagos Main Store",
-    submitLabel: "Create store",
-    helperText: "Store names are used as the unique identifier in the inventory workflow.",
-    successTitle: "Store created successfully",
-    successMessage: "The new store is now ready for stock operations.",
-    errorFallback: "We could not create that store. Please try again."
-};
-
-export const STORE_LIST_COPY = {
-    heading: "Existing stores",
-    description: "Review the full store directory and keep your inventory hierarchy easy to navigate.",
-    emptyTitle: "No stores yet",
-    emptyMessage: "Create your first store to begin organizing inventory operations.",
-    countLabel: "stores available"
-};
-
-export const PRODUCT_LIST_COPY = {
-    heading: "Existing products",
-    description: "Review the product catalog and keep inventory items easy to find across stores.",
-    emptyTitle: "No products yet",
-    emptyMessage: "Create your first product to begin organizing stock records.",
-    countLabel: "products available",
-    inputLabel: "Product name",
-    inputPlaceholder: "e.g. Yogurt 500ml",
-    unitLabel: "Base unit",
-    unitPlaceholder: "Select a base unit",
-    submitLabel: "Create product",
-    conversionLabel: "Unit conversions",
-    conversionDescription: "Define how other units map into the selected base unit so stock operations stay consistent.",
-    addConversionLabel: "Add conversion",
-    conversionUnitLabel: "Conversion unit",
-    conversionAmountLabel: "Multiplier to base",
-    noConversionsText: "No conversions configured yet."
-};
-
-export const ALLOWED_PRODUCT_UNITS = ["pcs", "box", "carton", "crate", "bag", "kg", "l", "bottle", "pack"];
-
-export const STOCK_TAKE_COPY = {
-    heading: "Record a stock take",
-    description: "Capture the current inventory level for a store and product so balances can be tracked consistently.",
-    storeLabel: "Store",
-    productLabel: "Product",
-    quantityLabel: "Quantity",
-    unitLabel: "Unit",
-    dateLabel: "Stock take date",
-    remarksLabel: "Remarks",
-    remarksPlaceholder: "Optional notes about the count",
-    submitLabel: "Save stock take",
-    emptyTitle: "No stock takes yet",
-    emptyMessage: "Once a stock take is saved, it will appear here as a reliable history of baseline inventory.",
-    summaryLabel: "Current balance"
-};
-
-export const UNIT_PAGE_COPY = {
-    "badge": "Units Catalog",
-    "heading": "Units",
-    "description": "View and manage units",
-    "countLabel": "Existing Units",
-    "createSectionTitle": "Create Unit",
-    "createSectionDescription": "Add a new unit to the unit registry",
-    "createUnitBtnLabel": "Create Unit",
-    "submitSuccessMsg": "Unit Created Successfully",
-    "helperText": "After creating this unit, you can set conversion rules of products to involve this unit",
-    "emptyTitle": "No units created yet",
-    "emptyMessage": "Create your first unit to begin organizing inventory operations.",
-    
-}
 
 export const NAVIGATION_ROUTES = [
     {
@@ -118,3 +47,90 @@ export const NAVIGATION_ROUTES = [
         )
     }
 ];
+
+
+export const CREATE_STORE_COPY = {
+    heading: "Create a new store",
+    description: "Add a store to begin tracking stock movements, reconciliations, and balances from one consistent workspace.",
+    inputLabel: "Store name",
+    inputPlaceholder: "e.g. Amarantha Store",
+    submitLabel: "Create store",
+    helperText: "Store names are used as the unique identifier in the inventory workflow.",
+    successTitle: "Store created successfully",
+    successMessage: "The new store is now ready for stock operations.",
+    errorFallback: "We could not create that store. Please try again."
+};
+
+export const STORE_LIST_COPY = {
+    heading: "Existing stores",
+    description: "Review the full store directory and keep your inventory hierarchy easy to navigate.",
+    emptyTitle: "No stores yet",
+    emptyMessage: "Create your first store to begin organizing inventory operations.",
+    countLabel: "stores available"
+};
+
+export const STORE_PAGE_ERROR_COPY = {
+    "heading": "An Error occured",
+    "customMessage": "An error was either raised client-side or occured in attempt to receive response from server"
+};
+
+export const PRODUCT_LIST_COPY = {
+    heading: "Existing products",
+    description: "Review the product catalog and keep inventory items easy to find across stores.",
+    emptyTitle: "No products yet",
+    emptyMessage: "Create your first product to begin organizing stock records.",
+    countLabel: "products available",
+    inputLabel: "Product name",
+    inputPlaceholder: "e.g. Yogurt 500ml",
+    unitLabel: "Base unit",
+    unitPlaceholder: "Select a unit",
+    submitLabel: "Create product",
+    "helperText": "The base unit and conversion rules are stored with the product so later stock operations can stay consistent.",
+    conversionLabel: "Unit conversions",
+    conversionDescription: "Define how other units map into the selected base unit so stock operations stay consistent.",
+    addConversionLabel: "Add conversion",
+    conversionUnitLabel: "Conversion unit",
+    conversionAmountLabel: "Multiplier to base",
+    noConversionsText: "No conversions configured yet."
+};
+
+export const CREATE_PRODUCT_FORM_COPY = {
+    "title": "Create a product",
+    "description": "Add a product so it can be used across receipts, issues, and balance views."
+}
+
+export const PRODUCT_PAGE_ERROR_COPY = STORE_PAGE_ERROR_COPY;
+
+export const STOCK_TAKE_COPY = {
+    heading: "Record a stock take",
+    description: "Capture the current inventory level for a store and product so balances can be tracked consistently.",
+    storeLabel: "Store",
+    productLabel: "Product",
+    quantityLabel: "Quantity",
+    unitLabel: "Unit",
+    dateLabel: "Stock take date",
+    remarksLabel: "Remarks",
+    remarksPlaceholder: "Optional notes about the count",
+    submitLabel: "Save stock take",
+    emptyTitle: "No stock takes yet",
+    emptyMessage: "Once a stock take is saved, it will appear here as a reliable history of baseline inventory.",
+    summaryLabel: "Current balance"
+};
+
+export const STOCK_TAKE_PAGE_ERROR_COPY = STORE_PAGE_ERROR_COPY;;
+
+export const UNIT_PAGE_COPY = {
+    "badge": "Units Catalog",
+    "heading": "Units",
+    "description": "View and manage units",
+    "countLabel": "Existing Units",
+    "createSectionTitle": "Create Unit",
+    "createSectionDescription": "Add a new unit to the unit registry",
+    "createUnitBtnLabel": "Create Unit",
+    "submitSuccessMsg": "Unit Created Successfully",
+    "helperText": "After creating this unit, you can set conversion rules of products to involve this unit",
+    "emptyTitle": "No units created yet",
+    "emptyMessage": "Create your first unit to begin organizing inventory operations.",    
+}
+
+export const UNIT_PAGE_ERROR_COPY = STORE_PAGE_ERROR_COPY;

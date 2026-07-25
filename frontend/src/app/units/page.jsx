@@ -3,7 +3,8 @@
 import PageHero from "@/components/PageHero";
 import { UNIT_PAGE_COPY } from "@/CONSTANTS";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getAllUnits, createUnit } from "@/api.js";
+import { useGetUnits } from "@/hooks";
+import { createUnit, getAllUnits } from "@/api";
 import PageSection  from "@/components/PageSection";
 import SectionCard from "@/components/SectionCard";
 import GenericForm from "@/components/GenericForm";
@@ -11,32 +12,14 @@ import UnitList from "@/components/UnitList";
 
 
 export default function UnitsPage() {
-    const [units, setUnits] = useState([]);
-    const [unitsQueryState, setUnitsQueryState] = useState({
-        "loading": false,
-        "error": ""
-    });
+    let [units, setUnits, isLoading, error] = useGetUnits();
+
     const [unitFormState, setUnitFormState] = useState({
         "unitName": "",
         "unitSymbol": ""
     });
     const setUnitName = (event) => setUnitFormState(prevState => ({...prevState, "unitName": event.target.value}));
     const setUnitSymbol = (event) => setUnitFormState(prevState => ({...prevState, "unitSymbol": event.target.value}));
-
-    const loadUnits = useCallback(async () => {
-        try{
-            const units = await getAllUnits();
-            setUnits(units);
-        } catch(loadError) {
-            setUnitsQueryState(prevState => ({...prevState, "error": loadError.message || "Units could not be loaded. Please try again"}));
-        } finally {
-            setUnitsQueryState(prevState => ({...prevState, "loading": false}));
-        }
-    });
-
-    useEffect(() => {
-        loadUnits();
-    }, [loadUnits]);
 
     const summaryValue = useMemo(() => {
         if(units.length === 0)
@@ -64,6 +47,11 @@ export default function UnitsPage() {
                         onSubmit={async (event) => {
                             event.preventDefault();
                             await createUnit(unitFormState.unitName, unitFormState.unitSymbol);
+                            setUnits(await getAllUnits());
+                            setUnitFormState({
+                                "unitName": "",
+                                "unitSymbol": ""
+                            });
                         }}
                         controls={
                             [
@@ -89,8 +77,8 @@ export default function UnitsPage() {
                 <SectionCard title={UNIT_PAGE_COPY.heading} description={UNIT_PAGE_COPY.description}>
                     <UnitList
                         units={units}
-                        isLoading={unitsQueryState.loading}
-                        error={unitsQueryState.error}
+                        isLoading={isLoading}
+                        error={error}
                         emptyTitle={UNIT_PAGE_COPY.emptyTitle}
                         emptyMessage={UNIT_PAGE_COPY.emptyMessage}
                     />

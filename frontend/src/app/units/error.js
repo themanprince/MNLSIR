@@ -1,6 +1,6 @@
 "use client";
 
-import { STOCK_TAKE_PAGE_ERROR_COPY } from "@/CONSTANTS";
+import { UNIT_PAGE_ERROR_COPY } from "@/CONSTANTS";
 import React, { useEffect } from "react";
 
 export default function Error({ error, reset }) {
@@ -19,10 +19,10 @@ export default function Error({ error, reset }) {
 
         <div className="space-y-1.5">
           <h3 className="text-base font-black tracking-tight text-slate-900">
-            {STOCK_TAKE_PAGE_ERROR_COPY.heading}
+            {UNIT_PAGE_ERROR_COPY.heading}
           </h3>
           <p className="text-xs font-medium text-slate-500 max-w-sm mx-auto leading-relaxed">
-            {STOCK_TAKE_PAGE_ERROR_COPY.customMessage}
+            {UNIT_PAGE_ERROR_COPY.customMessage}
           </p>
         </div>
 
@@ -30,7 +30,7 @@ export default function Error({ error, reset }) {
         <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 text-left">
           <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">Exception</span>
           <code className="text-xs font-mono text-rose-600 block break-words">
-            {error?.message || STOCK_TAKE_PAGE_ERROR_COPY.customMessage}
+            {error?.message || UNIT_PAGE_ERROR_COPY.customMessage}
           </code>
         </div>
 

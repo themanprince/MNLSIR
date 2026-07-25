@@ -5,6 +5,7 @@ const MOCK_STORE_STORAGE_KEY = "mock-store-list";
 const MOCK_PRODUCT_STORAGE_KEY = "mock-product-list";
 const MOCK_BALANCE_STORAGE_KEY = "mock-stock-balances";
 const MOCK_STOCK_TAKE_STORAGE_KEY = "mock-stock-takes";
+const MOCK_UNIT_STORAGE_KEY = "mock-unit-list";
 const DEFAULT_CACHE_TTL_MS = 3000;
 
 async function parseResponse(response) {
@@ -96,6 +97,16 @@ function getProductsState() {
 function persistProductsState(products) {
     writeMockState(MOCK_PRODUCT_STORAGE_KEY, products);
 }
+
+function getUnitsState() {
+    const storedUnits = readMockState(MOCK_UNIT_STORAGE_KEY, null);
+    return Array.isArray(storedUnits) ? storedUnits : [];
+}
+
+function persistUnitsState(units) {
+    writeMockState(MOCK_UNIT_STORAGE_KEY, units);
+}
+
 
 function getBalanceState(storeId) {
     const storedBalances = readMockState(MOCK_BALANCE_STORAGE_KEY, {});
@@ -201,33 +212,17 @@ class MockInventoryApiAdapter {
         });
     }
 
-    async createProduct(productName, unitOrOptions, conversions = []) {
+    async createProduct(productName, baseUnitID, conversionsRules = []) {
         this.invalidateCache(this.getCacheKey("products"));
         await delay(300);
 
-        let normalizedName = "";
-        let normalizedUnit = "";
-        let normalizedConversions = [];
-        let baseUnit = "";
-
-        if (typeof unitOrOptions === "string") {
-            normalizedUnit = normalizeText(unitOrOptions);
-            normalizedName = normalizeText(productName);
-            normalizedConversions = Array.isArray(conversions) ? conversions : [];
-            baseUnit = normalizedUnit;
-        } else {
-            const incomingOptions = unitOrOptions || {};
-            normalizedName = normalizeText(productName);
-            normalizedUnit = normalizeText(incomingOptions.baseUnit || incomingOptions.defaultUnit || incomingOptions.unit);
-            baseUnit = normalizeText(incomingOptions.baseUnit || incomingOptions.defaultUnit || incomingOptions.unit);
-            normalizedConversions = Array.isArray(incomingOptions.conversions) ? incomingOptions.conversions : [];
-        }
+        let normalizedName = normalizeText(productName);
 
         if (!normalizedName) {
             return parseResponse(createMockResponse({ detail: "Product name is required." }, 400));
         }
 
-        if (!normalizedUnit) {
+        if (!baseUnitID) {
             return parseResponse(createMockResponse({ detail: "Product unit is required." }, 400));
         }
 
@@ -238,18 +233,64 @@ class MockInventoryApiAdapter {
             return parseResponse(createMockResponse({ detail: `Product already exists having name=${productName}` }, 409));
         }
 
+        const sku = getSKU(normalizedName);
+
         const newProduct = {
-            product_id: Date.now(),
-            product_name: normalizedName,
-            default_unit: normalizedUnit,
-            base_unit: baseUnit || normalizedUnit,
-            unit_conversions: normalizedConversions
+            id: Date.now(),
+            name: normalizedName,
+            sku: sku,
+            base_unit_id: baseUnitID,
+            unit_conversions: conversionsRules
         };
 
         products.push(newProduct);
         persistProductsState(products);
 
         return parseResponse(createMockResponse(newProduct, 201));
+    }
+
+    async getAllUnits() {
+        return this.withCache(this.getCacheKey("units"), async () => {
+            await delay(180);
+            const units = getUnitsState();
+            return parseResponse(createMockResponse(units));
+        });
+    }
+
+    async createUnit(unitName, unitSymbol) {
+        this.invalidateCache(this.getCacheKey("units"));
+        await delay(300);
+
+        let normalizedName = normalizeText(unitName);
+        let normalizedSymbol = String(unitSymbol).toUpperCase();
+
+        if (!normalizedName) {
+            return parseResponse(createMockResponse({ detail: "Unit name is required." }, 400));
+        }
+
+        if (!normalizedSymbol) {
+            return parseResponse(createMockResponse({ detail: "unit symbol is required." }, 400));
+        }
+
+        const units = getUnitsState();
+        const duplicateUnit = units.find((unit) => normalizeText(unit.unit_name) === normalizedName);
+
+        if (duplicateUnit) {
+            return parseResponse(createMockResponse({ detail: `Unit already exists having name=${normalizedName}` }, 409));
+        }
+
+        const sku = getSKU(normalizedName);
+
+        const newUnit = {
+            unit_id: Date.now(),
+            unit_name: normalizedName,
+            unit_symbol: unitSymbol,
+        };
+
+        units.push(newUnit);
+        persistUnitsState(units);
+
+        return parseResponse(createMockResponse(newUnit, 201));
     }
 
     async submitStockTake({ storeId, productId, targetQuantity, stocktakeDate, remarks = "", recordedBy = 1, unit = null }) {
@@ -379,21 +420,27 @@ class MockInventoryApiAdapter {
     }
 }
 
-class MainInventoryApiAdapter {
+class MainInventoryAPIAdapter {
     constructor() {
+
     }
 
     async getAllStores() {
-
+        return parseResponse(await fetch(`${BACKEND_URL}/store/all`));
     }
 
     async createStore(storeName) {
+        return parseResponse(await fetch(`${BACKEND_URL}/store/${storeName}`, {
+            "method": "POST"
+        }));
     }
 
-    async getAllProducts() {
+    async getAllProducts(sort="alpha", offset=0, limit=50) {
+        return parseResponse(await fetch(`${BACKEND_URL}/product/all?sort=${sort}&offset=${offset}&limit=${limit}`));
     }
 
-    async createProduct(productName, baseUnitID, conversionRules = []) {
+    async createProduct(productName, baseUnitID, conversionsRules) {
+        
         const productSKU = getSKU(productName);
 
         const payload = JSON.stringify({
@@ -403,24 +450,21 @@ class MainInventoryApiAdapter {
             "conversion_rules": conversionRules
         });
 
-        const response = await fetch(`${BACKEND_URL}/product`, {
+        return parseResponse(await fetch(`${BACKEND_URL}/product`, {
             "method": "POST",
             "body": payload
-        });
-
-        return await response.json();
+        }));
     }
 
-    async submitStockTake({ storeId, productId, targetQuantity, stocktakeDate, remarks = "", recordedBy = 1, unit = null }) {
+    async getAllUnits() {
+        return parseResponse(await fetch(`${BACKEND_URL}/unit/all`));
     }
 
-    async getStockTakes() {
-    }
-
-    async getStockBalances(store_id, sort = "alpha", offset = 0, limit = 50) {
-    }
-
-    async getStockBalanceSummary(store_id) {
+    async createUnit(unitName, unitSymbol) {
+        return parseResponse(await fetch(`${BACKEND_URL}/unit`, {
+            "method": "POST",
+            "body": JSON.stringify({"unit_name": unitName, "unit_symbol": unitSymbol})
+        }));
     }
 }
 
@@ -443,6 +487,14 @@ class InventoryApiClient {
 
     createProduct(productName, unitOrOptions, conversions) {
         return this.adapter.createProduct(productName, unitOrOptions, conversions);
+    }
+
+    createUnit(unitName, unitSymbol) {
+        return this.adapter.createUnit(unitName, unitSymbol);
+    }
+
+    getAllUnits() {
+        return this.adapter.getAllUnits();
     }
 
     submitStockTake(payload) {
@@ -473,29 +525,19 @@ export function clearMockApiState() {
 }
 
 export async function getAllStores() {
-    const response = await fetch(`${BACKEND_URL}/store/all`);
-
-    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
-
-    return await response.json();
+    return inventoryApi.getAllStores();
 }
 
 export async function createStore(storeName) {
-    const response = await fetch(`${BACKEND_URL}/store/${storeName}`, {
-        "method": "POST"
-    });
-
-    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
-
-    return await response.json();
+    return inventoryApi.createStore(storeName);
 }
 
-export async function getAllProducts() {
-    return inventoryApi.getAllProducts();
+export async function getAllProducts(sort="alpha", offset=0, limit=50) {
+    return inventoryApi.getAllProducts(sort, offset, limit);
 }
 
-export async function createProduct(productName, unitOrOptions, conversions) {
-    return inventoryApi.createProduct(productName, unitOrOptions, conversions);
+export async function createProduct(productName, baseUnitID, conversionsRules) {
+    return inventoryApi.createProduct(productName, baseUnitID, conversionsRules);
 }
 
 export async function submitStockTake(payload) {
@@ -515,22 +557,11 @@ export async function getStockBalanceSummary(store_id) {
 }
 
 export async function getAllUnits() {
-    const response = await fetch(`${BACKEND_URL}/unit/all`);
-
-    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
-
-    return await response.json();
+    return inventoryApi.getAllUnits();
 }
 
 export async function createUnit(unitName, unitSymbol) {
-    const response = await fetch(`${BACKEND_URL}/unit`, {
-        "method": "POST",
-        "body": JSON.stringify({"unit_name": unitName, "unit_symbol": unitSymbol})
-    });
-
-    if(!response.ok) throw new Error(`Error - ${response.status}. ${await response.json()}`);
-
-    return await response.json();
+    return inventoryApi.createUnit(unitName, unitSymbol);
 }
 
 export { BACKEND_URL, InventoryApiClient, MockInventoryApiAdapter };
