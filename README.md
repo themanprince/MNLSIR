@@ -19,8 +19,10 @@ The endpoints for accessing and using these services were being developed side b
 Asides these, the data model for the entire application can be found in the file "db.py" in the "backend" directory of the application.
 
 ### THE FRONTEND
-Let me start by saying I am no UI/UX Designer. I needed assistance with the aestheticsc of the application and employed the help of AI and permit me to say I am very disaappointed. Not with the aesthetics because it did that well. However, the code has required much rewriting, bug-fixes etc.
-
-The functionalities implemented are simply Read/Create functionalities for Products, Stores, Units, StockBalances.
-There is a file named "api.js" in "src" folder of the "frontend" directory which handles the communication witht the backend.
-However, I will prefer the frontend re-written, maybe the reusable components in "src/components" could be reused for redeveloping it.
+The _'view"_ sub-endpoints handle the template rendering for the frontend of the application.  
+  
+Decided a monolith will be better instead of the previous idea of separately-deployed frontend and backend. Why?  
+  
+Imagine a situation where the backend is down for some reason but the frontend is still up... A staff tries to update some record using the frontend... The frontend being the frontend tries to reach the backend with no success, even after retries. It returns error-message to the staff (if the staff is patient enough to wait through the retries...), who may be in the middle of an important multi-stage activity and may not be able to persist the info somewhere offline(e.g. on paper). That info will likely be lost and impair the business process.  
+  
+But contrast that with a situation where everything de one place.. if backend is down, frontend is down too.. everybody reverts to offline persistence e.g. papers and pens... to resume with online record taking whern the system gets back online

@@ -1,5 +1,5 @@
+python-multipart
 fastapi
-sqlachemy
-pydantic
-pytest
-uvicorn
+sqlalchemy
+python-dotemv
+sqladmin[full]

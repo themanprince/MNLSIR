@@ -1,4 +1,4 @@
-from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column
+from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column, relationship
 from sqlalchemy import create_engine, ForeignKey, CheckConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
 from sqlalchemy.dialects.sqlite.json import JSON
 from datetime import datetime, date
@@ -33,13 +33,21 @@ class Product(Base):
     sku = mapped_column(String, unique=True, nullable=False)
     base_unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
 
+    base_unit = relationship("Unit", primaryjoin="Product.base_unit_id == Unit.id", uselist=False)
+
+    def __str__(self):
+        return self.name
+
 
 class Unit(Base):
     __tablename__ = "units"
 
     id = mapped_column(Integer, primary_key=True)
     name = mapped_column(String, nullable=False)
-    symbol = mapped_column(String)
+    symbol = mapped_column(String, nullable=False)
+
+    def __str__(self):
+        return self.symbol
 
 
 class ProductUnitConversion(Base):
@@ -49,6 +57,9 @@ class ProductUnitConversion(Base):
     product_id = mapped_column(ForeignKey("products.id"), nullable=False)
     unit_id = mapped_column(ForeignKey("units.id"), nullable=False)
     multiplier_to_base = mapped_column(Numeric(12, 4))
+
+    product = relationship("Product", primaryjoin="ProductUnitConversion.product_id == Product.id", uselist=False)
+    unit = relationship("Unit", primaryjoin="ProductUnitConversion.unit_id == Unit.id", uselist=False)
 
 
 class DocumentType(str, enum.Enum):

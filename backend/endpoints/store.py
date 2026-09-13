@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
+from fastapi.templating import Jinja2Templates
+from pathlib import Path
 from db import get_session
 from repo.StoreRepo import StoreRepo
 from schema.CreateStoreResponse import CreateStoreResponse
@@ -6,18 +8,40 @@ from schema.CreateStoreResponse import CreateStoreResponse
 
 StoreRouter = APIRouter(prefix="/store")
 
-@StoreRouter.post("/{store_name}", response_model = CreateStoreResponse, status_code=201)
-async def create_store(store_name, session = Depends(get_session)):
+top = Path(__file__).resolve().parent.parent
+
+template_obj = Jinja2Templates(directory=f"{top}/templates")
+
+
+@StoreRouter.post("/", response_model = CreateStoreResponse, status_code=201)
+async def create_store(request:Request, store_name:str = Form(), session = Depends(get_session)):
     try:
         store_details = StoreRepo.create_new_store(store_name = store_name, session = session)
-        return store_details
+        
+        return template_obj.TemplateResponse("store.html", {
+            "request": request,
+            "show_response": True,
+            "is_success": True,
+            "store_details": store_details,
+            "directive_after_displaying_details": "redirect_to_list"
+        })
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return template_obj.TemplateResponse("store.html", {
+            "request": request,
+            "show_response": True,
+            "is_success": False,
+            "details": str(e),
+            "directive_after_displaying_details": "redirect_to_list"
+        })
 
 
-@StoreRouter.get("/all")
-async def get_all_stores(session = Depends(get_session)):
+@StoreRouter.get("/")
+async def get_all_stores(request: Request, session = Depends(get_session)):
     try:
-        return StoreRepo.get_all_stores(session = session)
+        stores = StoreRepo.get_all_stores(session = session)
+        return template_obj.TemplateResponse("store.html", {
+            "request": request,
+            "stores": stores
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

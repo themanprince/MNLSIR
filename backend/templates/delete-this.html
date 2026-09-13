@@ -1,0 +1,26 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="col-12">
+<div class="card">
+    <div class="card-header">
+    <h3 class="card-title">Testing</h3>
+    </div>
+    <div class="card-body border-bottom py-3">
+        {% if stores %}
+            <form method="post" action="/admin/delete-this">
+                <div class="mb-3">
+                    <label for="store_id" class="form-label">Select Store</label>
+                    <select class="form-select" id="store_id" name="store_id" required>
+                        {% for store in stores %}
+                            <option value="{{ store.store_id }}">{{ store.store_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-danger">Delete Store</button>
+            </form>
+        {% else %}
+            {{message}}
+        {% endif %}
+</div>
+</div>
+{% endblock %}
