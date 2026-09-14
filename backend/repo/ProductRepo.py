@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from service.UnitService import UnitService
 from schema.UnitConversionRule import UnitConversionRule
-from db import Product, ProductUnitConversion
+from db import Product, Unit, ProductUnitConversion
 from exceptions import CreateProductError
 from enum import Enum
 
@@ -20,7 +20,7 @@ class ProductRepo:
         self.unit_service = UnitService(session = session)
     
     def get_all_products(self, sort_order: SortOrder = SortOrder.ALPHABETICAL_ORDER, limit: int = 50, offset:int = 0):
-        query = self.session.query(Product)
+        query = self.session.query(Product, Unit.symbol).join(Unit, Product.base_unit_id == Unit.id)
         if sort_order and (sort_order != SortOrder.NO_ORDER) and (sort_order in SORT_MECHANISM):
             query = query.order_by(SORT_MECHANISM[sort_order])
         query = query.offset(offset).limit(limit)
@@ -28,15 +28,16 @@ class ProductRepo:
 
         payload_to_return = []
 
-        for product in all_products:
+        for product, symbol in all_products:
+
             product_payload = {
                 "id": product.id,
                 "name": product.name,
                 "sku": product.sku,
-                "base_unit_id": product.base_unit_id
+                "base_unit_id": product.base_unit_id,
+                "base_unit_symbol": symbol
             }
-            conversion_rules = self.session.query(ProductUnitConversion).filter_by(product_id = product.id).all()
-            product_payload["unit_conversions"] = [{"unit_id": conv.unit_id, "multiplier_to_base": conv.multiplier_to_base} for conv in conversion_rules]
+
             payload_to_return.append(product_payload)
         
         return payload_to_return

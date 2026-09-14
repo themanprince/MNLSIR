@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
 from db import Base, engine
-from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, DeleteThisAdmin
+from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, InventoryAdmin
 from endpoints.ledger import LedgerRouter
 from endpoints.store import StoreRouter
 from endpoints.inventory import InventoryRouter
@@ -35,7 +35,7 @@ admin.add_view(StoreAdmin)
 admin.add_view(UnitAdmin)
 admin.add_view(ProductAdmin)
 admin.add_view(ProductUnitConversionAdmin)
-admin.add_view(DeleteThisAdmin)
+admin.add_view(InventoryAdmin)
 
       
 app.include_router(LedgerRouter)

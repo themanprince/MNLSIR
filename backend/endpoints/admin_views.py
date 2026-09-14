@@ -2,6 +2,9 @@ from sqladmin import ModelView, BaseView, expose, Flash
 from db import Unit, Product, Store, ProductUnitConversion
 from db import make_session
 from repo.StoreRepo import StoreRepo
+from repo.ProductRepo import ProductRepo
+from service.LedgerService import LedgerService, SortOrder
+
 
 class UnitAdmin(ModelView, model=Unit):
     column_list = [Unit.id, Unit.name, Unit.symbol]
@@ -24,16 +27,27 @@ class ProductUnitConversionAdmin(ModelView, model=ProductUnitConversion):
     can_delete = False
 
 
-class DeleteThisAdmin(BaseView):
-    name = "Delete This"
-
-    @expose("/delete-this", methods=["GET", "POST"])
-    async def delete_this(self, request):
+class InventoryAdmin(BaseView):
+    name = "Inventory"
+    @expose("/inventory", methods=["GET", "POST"])
+    async def get_inventory_view(self, request):
         session = make_session()
-        if request.method == "GET":
-            stores = StoreRepo.get_all_stores(session = session)
-            return await self.templates.TemplateResponse(request, "delete-this.html", {"stores": stores})
-        elif request.method == "POST":
-            form = await request.form()
-            store_id = int(form.get("store_id"))
-            return await self.templates.TemplateResponse(request, "delete-this.html", {"message": f"Store with id ({store_id}) seen successfully."})
+        try:
+            if request.method == "GET":
+                products = ProductRepo(session = session).get_all_products()
+                stores = StoreRepo.get_all_stores(session = session)
+
+                store_id = request.query_params.get("store_id")
+                if store_id:
+                    store_id = int(store_id)
+                    ledger_service = LedgerService(session = session)
+                    inventory = ledger_service.get_stock_balances(store_id = store_id, sort_order = SortOrder.ALPHABETICAL_ORDER)
+                    return await self.templates.TemplateResponse(request, "inventory.html", {"store_is_selected": True, "inventory": inventory, "products": products, "stores": stores})
+                else:
+                    return await self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
+
+            elif request.method == "POST":
+                form = await request.form()
+                store_id = int(form.get("store_id"))
+        finally:
+            session.close()
