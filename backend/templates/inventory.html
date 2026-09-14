@@ -1,5 +1,24 @@
 {% extends "sqladmin/layout.html" %}
 {% block content %}
+    
+    {% if message %}
+        <div
+            class="alert alert-primary alert-dismissible fade show"
+            role="alert"
+        >
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+            ></button>
+        
+            <strong>{{message}}</strong>
+        </div>
+    {% endif %}
+    
+    
+
     <div
         class="card border-primary container-fluid"
     >
@@ -128,7 +147,7 @@
                     </div>
                     <div class="modal-body">
                             <div class="mb-3">
-                                <label for="staff_name" class="form-label">Staff Name (Temporary Fix)</label>
+                                <label for="staff_name" class="form-label">Staff Name (Temporary Fix, Important)</label>
                                 <input
                                     type="text"
                                     name="staff_name"
@@ -166,6 +185,15 @@
                                     type="number"
                                     name="quantity"
                                     id="quantity"
+                                    class="form-control"
+                                />                            
+                            </div>
+                            <div class="mb-3">
+                                <label for="remarks" class="form-label">Remarks (Optional)</label>
+                                <input
+                                    type="text"
+                                    name="remarks"
+                                    id="remarks"
                                     class="form-control"
                                 />                            
                             </div>

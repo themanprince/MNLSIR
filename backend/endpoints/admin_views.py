@@ -1,9 +1,11 @@
 from sqladmin import ModelView, BaseView, expose, Flash
-from db import Unit, Product, Store, ProductUnitConversion
+from db import Unit, Product, Store, ProductUnitConversion, Staff
 from db import make_session
 from repo.StoreRepo import StoreRepo
 from repo.ProductRepo import ProductRepo
 from service.LedgerService import LedgerService, SortOrder
+from service.InventoryService import InventoryService
+from decimal import Decimal
 
 
 class UnitAdmin(ModelView, model=Unit):
@@ -33,10 +35,10 @@ class InventoryAdmin(BaseView):
     async def get_inventory_view(self, request):
         session = make_session()
         try:
-            if request.method == "GET":
-                products = ProductRepo(session = session).get_all_products()
-                stores = StoreRepo.get_all_stores(session = session)
+            products = ProductRepo(session = session).get_all_products()
+            stores = StoreRepo.get_all_stores(session = session)
 
+            if request.method == "GET":
                 store_id = request.query_params.get("store_id")
                 if store_id:
                     store_id = int(store_id)
@@ -47,7 +49,30 @@ class InventoryAdmin(BaseView):
                     return await self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
 
             elif request.method == "POST":
+                inventory_service = InventoryService(session = session)
+
                 form = await request.form()
                 store_id = int(form.get("store_id"))
+                product_id = int(form.get("product_id"))
+                quantity = float(form.get("quantity"))
+                remarks = form.get("remarks")
+
+                inventory_service.submit_stocktake(
+                    recorded_by = 1,  # temporary fix, to be replaced with actual staff id
+                    store_id = store_id,
+                    product_id = product_id,
+                    target_quantity = Decimal(quantity),
+                    remarks = remarks
+                )
+
+                return await self.templates.TemplateResponse(request, "inventory.html", {"message":"Inventory Taking Successful", "products": products, "stores": stores})
+
         finally:
             session.close()
+
+
+class StaffAdmin(ModelView, model=Staff):
+    column_list = [Staff.id, Staff.first_name, Staff.last_name, Staff.other_names]
+    column_searchable_list = [Staff.first_name, Staff.last_name]
+    column_sortable_list = [Staff.first_name, Staff.last_name]
+    can_delete = True
