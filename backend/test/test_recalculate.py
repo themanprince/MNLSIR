@@ -3,7 +3,7 @@ import pytest
 from .conftest import db_session
 from .helpers import setup_yoghurt_plain, seed_test_stores, seed_dummy_document_line, seed_test_staff
 from service.StockService import StockService
-from db import StockBalance, StockMovement, MovementType
+from ..db import StockBalance, StockMovement, MovementType
 from decimal import Decimal
 from datetime import date, datetime
 

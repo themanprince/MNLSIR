@@ -1,7 +1,7 @@
 import pytest
 
 from backend.repo.StoreRepo import StoreRepo
-from db import Store
+from ..db import Store
 from .conftest import db_session
 from exceptions import CreateStoreError
 

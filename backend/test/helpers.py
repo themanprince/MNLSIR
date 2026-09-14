@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from decimal import Decimal
-from db import Staff, Store, Unit, Product, ProductUnitConversion, Document, DocumentLine, DocumentType
+from ..db import Staff, Store, Unit, Product, ProductUnitConversion, Document, DocumentLine, DocumentType
 from datetime import date
 
 
