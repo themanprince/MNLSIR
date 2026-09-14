@@ -1,7 +1,7 @@
 python-multipart
 fastapi
 sqlalchemy
-python-dotemv
+python-dotenv
 sqladmin[full]
 jinja2
 uvicorn
