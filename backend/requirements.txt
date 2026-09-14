@@ -3,3 +3,6 @@ fastapi
 sqlalchemy
 python-dotemv
 sqladmin[full]
+jinja2
+uvicorn
+pytest
