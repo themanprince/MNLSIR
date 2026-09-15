@@ -7,7 +7,7 @@ from .conftest import db_session
 from .helpers import setup_yoghurt_plain, seed_test_staff, seed_test_stores, seed_dummy_document_line
 from service.InventoryService import InventoryService
 from service.StockService import StockService
-from ..db import StockMovement, MovementType, InterventionLog, ActionType, StockBalance
+from db import StockMovement, MovementType, InterventionLog, ActionType, StockBalance
 from schema.ReceiveIssueStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
 from exceptions import UpdateStockMovementError, AssociateStockMovementError, SubmitStockTakeError

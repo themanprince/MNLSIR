@@ -3,7 +3,7 @@ import pytest
 from .conftest import db_session
 from .helpers import seed_test_unit
 from backend.repo.ProductRepo import ProductRepo
-from ..db import ProductUnitConversion, Product
+from db import ProductUnitConversion, Product
 from exceptions import CreateConversionRuleError, CreateProductError
 from schema.UnitConversionRule import UnitConversionRule
 from decimal import Decimal

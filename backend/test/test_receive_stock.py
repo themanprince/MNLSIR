@@ -6,7 +6,7 @@ from .conftest import db_session
 from .helpers import seed_test_stores, seed_test_staff, setup_achi, setup_yoghurt_plain
 from schema.ReceiveIssueStockRequest import ReceiveStockRequest
 from schema.ReceiveIssueItem import ReceiveIssueItem
-from ..db import StockMovement, MovementType, Document, DocumentLine, DocumentType
+from db import StockMovement, MovementType, Document, DocumentLine, DocumentType
 from exceptions import ReceiveIssueStockError
 from pydantic import ValidationError
 from datetime import date, timedelta

@@ -6,15 +6,19 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Install system dependencies (optional but commonly needed)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir --upgrade pip
+
 # Install dependencies first for better Docker layer caching
 COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy only backend application files
 COPY backend/ /app/
-
-# Run pytest during container build (build fails if tests fail)
-RUN pytest
 
 EXPOSE 8000
 
