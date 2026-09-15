@@ -1,14 +1,16 @@
 from sqladmin import ModelView, BaseView, expose
+from starlette.requests import Request
 from wtforms import PasswordField
 from wtforms.validators import Regexp
-from auth import get_password_hash
 from decimal import Decimal
 from db import Unit, Product, Store, ProductUnitConversion, Staff
 from db import make_session
+from auth import is_logged_in, get_password_hash
 from repo.StoreRepo import StoreRepo
 from repo.ProductRepo import ProductRepo
 from service.LedgerService import LedgerService, SortOrder
 from service.InventoryService import InventoryService
+
 
 
 class UnitAdmin(ModelView, model=Unit):
@@ -17,23 +19,58 @@ class UnitAdmin(ModelView, model=Unit):
     column_sortable_list = [Unit.name, Unit.symbol]
     can_delete = False
 
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)   
+
+
+
 class ProductAdmin(ModelView, model=Product):
     column_list = [Product.sku, Product.name, Product.base_unit_id]
     column_searchable_list = [Product.sku, Product.name]
     column_sortable_list = [Product.sku, Product.name]
     can_delete = False
 
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+
 class StoreAdmin(ModelView, model=Store):
     column_list = [Store.name]
     can_delete = False
+
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
 
 class ProductUnitConversionAdmin(ModelView, model=ProductUnitConversion):
     column_list = [ProductUnitConversion.product_id, ProductUnitConversion.unit_id, ProductUnitConversion.multiplier_to_base]
     can_delete = False
 
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
 
 class InventoryAdmin(BaseView):
     name = "Inventory"
+
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
     @expose("/inventory", methods=["GET", "POST"])
     async def get_inventory_view(self, request):
         session = make_session()
@@ -93,4 +130,9 @@ class StaffAdmin(ModelView, model=Staff):
 
     async def on_model_change(self, data, model, is_created, request):
         data["password"] = get_password_hash(data["password"])
-    
+
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)

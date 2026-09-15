@@ -27,7 +27,30 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt   
+    return encoded_jwt
+
+def decode_access_token(token):
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except Exception:
+        return None
+
+def is_logged_in(request: Request):
+    token = request.session.get("token")
+
+    if not token:
+        return False
+
+    payload = decode_access_token(token)
+    if not payload:
+        return False
+    
+    username = payload.get("username")
+
+    if not username:
+        return False
+
+    return True
 
 #Auth Class
 class AuthAdmin(AuthenticationBackend):
@@ -37,6 +60,21 @@ class AuthAdmin(AuthenticationBackend):
 
         session = make_session()
         try:
+            super_user_name = os.getenv("SUPER_USER_NAME")
+            super_user_password = os.getenv("SUPER_USER_PASSWORD")
+
+            if (super_user_name and super_user_password) and (username == super_user_name and password == super_user_password):
+                token = create_access_token({
+                    "id": 0,
+                    "username": super_user_name,
+                    "first_name": super_user_name,
+                    "last_name": super_user_name
+                })
+    
+                request.session.update({"token": token})
+    
+                return True
+
             staff = session.query(Staff).filter_by(username = username).first()
             if not staff:
                 return False
@@ -66,15 +104,4 @@ class AuthAdmin(AuthenticationBackend):
 
 
     async def authenticate(self, request: Request) -> bool:
-        token = request.session.get("token")
-
-        if not token:
-            return False
-
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("username")
-
-        if not username:
-            return False
-
-        return True
+        return is_logged_in(request)
