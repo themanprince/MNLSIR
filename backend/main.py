@@ -11,6 +11,7 @@ from endpoints.inventory import InventoryRouter
 from endpoints.product import ProductRouter
 from endpoints.unit import UnitRouter
 from CONSTANTS import FRONTEND_URL
+import os
 
 
 @asynccontextmanager
@@ -47,4 +48,5 @@ app.include_router(UnitRouter)
 
 if __name__ == "__main__":
 	import uvicorn
-	uvicorn.run("main:app", reload=True)
+	PORT = int(os.getenv("PORT", 8000))
+	uvicorn.run("main:app", port=PORT,reload=True)
