@@ -1,11 +1,14 @@
-from sqladmin import ModelView, BaseView, expose, Flash
+from sqladmin import ModelView, BaseView, expose
+from wtforms import PasswordField
+from wtforms.validators import Regexp
+from auth import get_password_hash
+from decimal import Decimal
 from db import Unit, Product, Store, ProductUnitConversion, Staff
 from db import make_session
 from repo.StoreRepo import StoreRepo
 from repo.ProductRepo import ProductRepo
 from service.LedgerService import LedgerService, SortOrder
 from service.InventoryService import InventoryService
-from decimal import Decimal
 
 
 class UnitAdmin(ModelView, model=Unit):
@@ -69,10 +72,25 @@ class InventoryAdmin(BaseView):
 
         finally:
             session.close()
-
-
 class StaffAdmin(ModelView, model=Staff):
-    column_list = [Staff.id, Staff.first_name, Staff.last_name, Staff.other_names]
-    column_searchable_list = [Staff.first_name, Staff.last_name]
-    column_sortable_list = [Staff.first_name, Staff.last_name]
-    can_delete = True
+    column_list = [Staff.id, Staff.username, Staff.first_name, Staff.last_name, Staff.other_names] #columns to show in read/list view
+    form_columns = [Staff.username, Staff.password, Staff.first_name, Staff.last_name, Staff.other_names, Staff.other_details] #columns to show in create-form
+    form_overrides = dict(password=PasswordField)
+    column_searchable_list = [Staff.username, Staff.first_name, Staff.last_name]
+    column_sortable_list = [Staff.username, Staff.first_name, Staff.last_name]
+    can_delete = False
+
+    form_args = {
+        "username": {
+            "validators": [
+                Regexp(
+                    regex=r"^[a-z0-9_\-]+$",
+                    message="username should use only lowercase (small letters) without any space between words"
+                )
+            ],
+        }
+    }
+
+    async def on_model_change(self, data, model, is_created, request):
+        data["password"] = get_password_hash(data["password"])
+    

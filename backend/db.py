@@ -11,6 +11,8 @@ class Staff(Base):
     __tablename__ = "staff"
 
     id = mapped_column(Integer, primary_key=True)
+    username = mapped_column(String, unique=True, nullable=False)
+    password = mapped_column(String, nullable=False)
     first_name = mapped_column(String, nullable=False)
     last_name = mapped_column(String, nullable=False)
     other_names = mapped_column(String, nullable=True)

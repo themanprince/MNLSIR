@@ -1,9 +1,11 @@
 python-multipart
-fastapi
+fastapi[all]
+pydantic
 sqlalchemy
 python-dotenv
 sqladmin[full]
 jinja2
-uvicorn
+pyjwt
+pwdlib[argon2]
 itsdangerous
 pytest
