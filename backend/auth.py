@@ -94,7 +94,7 @@ class AuthAdmin(AuthenticationBackend):
                 return False
 
             token = create_access_token({
-                "id": staff.id,
+                "staff_id": staff.id,
                 "username": staff.username,
                 "first_name": staff.first_name,
                 "last_name": staff.last_name

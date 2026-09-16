@@ -5,7 +5,7 @@ from wtforms.validators import Regexp
 from decimal import Decimal
 from db import Unit, Product, Store, ProductUnitConversion, Staff
 from db import make_session
-from auth import is_logged_in, get_password_hash
+from auth import is_logged_in, get_password_hash, decode_access_token
 from repo.StoreRepo import StoreRepo
 from repo.ProductRepo import ProductRepo
 from service.LedgerService import LedgerService, SortOrder
@@ -89,7 +89,20 @@ class InventoryAdmin(BaseView):
                     return await self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
 
             elif request.method == "POST":
+                async def return_template_with_info(info):
+                    return await self.templates.TemplateResponse(request, "inventory.html", {"message": info, "products": products, "stores": stores})
+
                 inventory_service = InventoryService(session = session)
+
+                token = request.session.get("token")
+                payload = decode_access_token(token)
+                if not payload:
+                    return await return_template_with_info("Unable to access required info from user's auth token. Contact Admin")
+
+                staff_id = payload.get("staff_id")
+                
+                if not staff_id:
+                    return await return_template_with_info("Unable to access staff_id from user's auth token. Contact Admin")
 
                 form = await request.form()
                 store_id = int(form.get("store_id"))
@@ -98,14 +111,14 @@ class InventoryAdmin(BaseView):
                 remarks = form.get("remarks")
 
                 inventory_service.submit_stocktake(
-                    recorded_by = 1,  # temporary fix, to be replaced with actual staff id
+                    recorded_by = staff_id,
                     store_id = store_id,
                     product_id = product_id,
                     target_quantity = Decimal(quantity),
                     remarks = remarks
                 )
 
-                return await self.templates.TemplateResponse(request, "inventory.html", {"message":"Inventory Taking Successful", "products": products, "stores": stores})
+                return await return_template_with_info("Inventory Taking Successful")
 
         finally:
             session.close()
