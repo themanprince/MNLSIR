@@ -22,7 +22,7 @@ def get_password_hash(password):
     return password_hash.hash(password)
 
 def create_access_token(data: dict):
-    expires_delta:timedelta = timedelta(minutes = int(os.getenv("ACCESS_TOKEN_EXPIRATION_IN_MINUTES", 60)))
+    expires_delta:timedelta = timedelta(minutes = int(os.getenv("ACCESS_TOKEN_EXPIRATION_IN_MINUTES", 30)))
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})

@@ -109,6 +109,8 @@ class InventoryAdmin(BaseView):
 
         finally:
             session.close()
+
+            
 class StaffAdmin(ModelView, model=Staff):
     column_list = [Staff.id, Staff.username, Staff.first_name, Staff.last_name, Staff.other_names] #columns to show in read/list view
     form_columns = [Staff.username, Staff.password, Staff.first_name, Staff.last_name, Staff.other_names, Staff.other_details] #columns to show in create-form
