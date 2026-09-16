@@ -1,4 +1,5 @@
 from sqladmin import ModelView, BaseView, expose
+from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from wtforms import PasswordField
 from wtforms.validators import Regexp
@@ -71,25 +72,25 @@ class InventoryAdmin(BaseView):
         return is_logged_in(request)
 
     @expose("/inventory", methods=["GET", "POST"])
-    def get_inventory_view(self, request):
+    async def get_inventory_view(self, request):
         session = make_session()
         try:
-            products = ProductRepo(session = session).get_all_products()
-            stores = StoreRepo.get_all_stores(session = session)
+            products = await run_in_threadpool(ProductRepo(session = session).get_all_products())
+            stores = await run_in_threadpool(StoreRepo.get_all_stores(session = session))
 
             if request.method == "GET":
                 store_id = request.query_params.get("store_id")
                 if store_id:
                     store_id = int(store_id)
                     ledger_service = LedgerService(session = session)
-                    inventory = ledger_service.get_stock_balances(store_id = store_id, sort_order = SortOrder.ALPHABETICAL_ORDER)
-                    return await self.templates.TemplateResponse(request, "inventory.html", {"store_is_selected": True, "inventory": inventory, "products": products, "stores": stores})
+                    inventory = await run_in_threadpool(ledger_service.get_stock_balances(store_id = store_id, sort_order = SortOrder.ALPHABETICAL_ORDER))
+                    return self.templates.TemplateResponse(request, "inventory.html", {"store_is_selected": True, "inventory": inventory, "products": products, "stores": stores})
                 else:
-                    return await self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
+                    return self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
 
             elif request.method == "POST":
-                async def return_template_with_info(info):
-                    return await self.templates.TemplateResponse(request, "inventory.html", {"message": info, "products": products, "stores": stores})
+                def return_template_with_info(info):
+                    return self.templates.TemplateResponse(request, "inventory.html", {"message": info, "products": products, "stores": stores})
 
                 inventory_service = InventoryService(session = session)
 
@@ -109,15 +110,15 @@ class InventoryAdmin(BaseView):
                 quantity = float(form.get("quantity"))
                 remarks = form.get("remarks")
 
-                inventory_service.submit_stocktake(
+                await run_in_threadpool(inventory_service.submit_stocktake(
                     recorded_by = staff_id,
                     store_id = store_id,
                     product_id = product_id,
                     target_quantity = Decimal(quantity),
                     remarks = remarks
-                )
+                ))
 
-                return await return_template_with_info("Inventory Taking Successful")
+                return return_template_with_info("Inventory Taking Successful")
 
         finally:
             session.close()
