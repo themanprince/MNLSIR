@@ -84,13 +84,13 @@ class InventoryAdmin(BaseView):
                     store_id = int(store_id)
                     ledger_service = LedgerService(session = session)
                     inventory = await run_in_threadpool(ledger_service.get_stock_balances, store_id = store_id, sort_order = SortOrder.ALPHABETICAL_ORDER)
-                    return self.templates.TemplateResponse(request, "inventory.html", {"store_is_selected": True, "inventory": inventory, "products": products, "stores": stores})
+                    return await self.templates.TemplateResponse(request, "inventory.html", {"store_is_selected": True, "inventory": inventory, "products": products, "stores": stores})
                 else:
-                    return self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
+                    return await self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
 
             elif request.method == "POST":
-                def return_template_with_info(info):
-                    return self.templates.TemplateResponse(request, "inventory.html", {"message": info, "products": products, "stores": stores})
+                async def return_template_with_info(info):
+                    return await self.templates.TemplateResponse(request, "inventory.html", {"message": info, "products": products, "stores": stores})
 
                 inventory_service = InventoryService(session = session)
 
@@ -118,7 +118,7 @@ class InventoryAdmin(BaseView):
                     remarks = remarks
                 )
 
-                return return_template_with_info("Inventory Taking Successful")
+                return await return_template_with_info("Inventory Taking Successful")
 
         finally:
             session.close()
