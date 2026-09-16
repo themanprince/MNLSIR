@@ -3,9 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
-from db import Base, engine
+from db import Base, engine, make_session
 from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, InventoryAdmin, StaffAdmin
-from auth import AuthAdmin
+from auth import AuthAdmin, create_superuser_staff
 from endpoints.ledger import LedgerRouter
 from endpoints.store import StoreRouter
 from endpoints.inventory import InventoryRouter
@@ -21,6 +21,12 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    session = make_session()
+    try:
+        create_superuser_staff(session = session)
+    finally:
+          session.close()
+          
     yield
 
 

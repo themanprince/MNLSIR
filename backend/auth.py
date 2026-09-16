@@ -4,8 +4,10 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from pwdlib import PasswordHash
 import jwt
+from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 import os
+from exceptions import AuthError
 from db import make_session, Staff
 
 
@@ -14,7 +16,8 @@ SECRET_KEY = os.getenv("SECRET_KEY1", "")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
     
 
-#helpers
+#==============HELPERS=================
+#=========================================
 def verify_password(plain_password, hashed_password):
     return password_hash.verify(plain_password, hashed_password)
 
@@ -52,7 +55,29 @@ def is_logged_in(request: Request):
 
     return True
 
-#Auth Class
+
+def create_superuser_staff(session: Session):
+    super_user_name = os.getenv("SUPER_USER_NAME")
+    super_user_password = os.getenv("SUPER_USER_PASSWORD")
+
+    if not super_user_name or not super_user_password:
+        raise AuthError("Please set env vars for SUPER_USER_NAME and SUPER_USER_PASSWORD")
+
+    super_user_password = get_password_hash(super_user_password)
+    super_user_staff = Staff(
+        username = super_user_name,
+        password = super_user_password,
+        first_name = super_user_name,
+        last_name = super_user_name,
+        other_names = super_user_name
+    )
+    session.add(super_user_staff)
+    session.commit()
+
+
+
+#==============AUTH CLASS=================
+#=========================================
 class AuthAdmin(AuthenticationBackend):
     async def login(self, request: Request) -> bool|RedirectResponse:
         form = await request.form()
@@ -60,21 +85,7 @@ class AuthAdmin(AuthenticationBackend):
 
         session = make_session()
         try:
-            super_user_name = os.getenv("SUPER_USER_NAME")
-            super_user_password = os.getenv("SUPER_USER_PASSWORD")
-
-            if (super_user_name and super_user_password) and (username == super_user_name and password == super_user_password):
-                token = create_access_token({
-                    "id": 0,
-                    "username": super_user_name,
-                    "first_name": super_user_name,
-                    "last_name": super_user_name
-                })
-    
-                request.session.update({"token": token})
-    
-                return True
-
+            
             staff = session.query(Staff).filter_by(username = username).first()
             if not staff:
                 return False

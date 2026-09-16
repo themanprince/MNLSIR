@@ -27,3 +27,6 @@ class CreateProductError(Exception):
 
 class CreateUnitError(Exception):
     pass
+
+class AuthError(Exception):
+    pass
