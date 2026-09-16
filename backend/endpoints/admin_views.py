@@ -75,15 +75,15 @@ class InventoryAdmin(BaseView):
     async def get_inventory_view(self, request):
         session = make_session()
         try:
-            products = await run_in_threadpool(ProductRepo(session = session).get_all_products())
-            stores = await run_in_threadpool(StoreRepo.get_all_stores(session = session))
+            products = await run_in_threadpool(ProductRepo(session = session).get_all_products)
+            stores = await run_in_threadpool(StoreRepo.get_all_stores, session = session)
 
             if request.method == "GET":
                 store_id = request.query_params.get("store_id")
                 if store_id:
                     store_id = int(store_id)
                     ledger_service = LedgerService(session = session)
-                    inventory = await run_in_threadpool(ledger_service.get_stock_balances(store_id = store_id, sort_order = SortOrder.ALPHABETICAL_ORDER))
+                    inventory = await run_in_threadpool(ledger_service.get_stock_balances, store_id = store_id, sort_order = SortOrder.ALPHABETICAL_ORDER)
                     return self.templates.TemplateResponse(request, "inventory.html", {"store_is_selected": True, "inventory": inventory, "products": products, "stores": stores})
                 else:
                     return self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
@@ -110,13 +110,13 @@ class InventoryAdmin(BaseView):
                 quantity = float(form.get("quantity"))
                 remarks = form.get("remarks")
 
-                await run_in_threadpool(inventory_service.submit_stocktake(
+                await run_in_threadpool(inventory_service.submit_stocktake, 
                     recorded_by = staff_id,
                     store_id = store_id,
                     product_id = product_id,
                     target_quantity = Decimal(quantity),
                     remarks = remarks
-                ))
+                )
 
                 return return_template_with_info("Inventory Taking Successful")
 
