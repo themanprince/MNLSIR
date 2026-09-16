@@ -71,7 +71,7 @@ class InventoryAdmin(BaseView):
         return is_logged_in(request)
 
     @expose("/inventory", methods=["GET", "POST"])
-    async def get_inventory_view(self, request):
+    def get_inventory_view(self, request):
         session = make_session()
         try:
             products = ProductRepo(session = session).get_all_products()
