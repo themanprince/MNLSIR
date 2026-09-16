@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
 from db import Base, engine, make_session
-from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, InventoryAdmin, StaffAdmin
+from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, InventoryAdmin, StaffAdmin, StockMovementAdmin
 from auth import AuthAdmin, create_superuser_staff
 from endpoints.ledger import LedgerRouter
 from endpoints.store import StoreRouter
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
         create_superuser_staff(session = session)
     finally:
           session.close()
-          
+
     yield
 
 
@@ -52,6 +52,7 @@ admin.add_view(ProductAdmin)
 admin.add_view(ProductUnitConversionAdmin)
 admin.add_view(InventoryAdmin)
 admin.add_view(StaffAdmin)
+admin.add_view(StockMovementAdmin)
 
       
 app.include_router(LedgerRouter)

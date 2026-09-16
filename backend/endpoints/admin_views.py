@@ -3,7 +3,7 @@ from starlette.requests import Request
 from wtforms import PasswordField
 from wtforms.validators import Regexp
 from decimal import Decimal
-from db import Unit, Product, Store, ProductUnitConversion, Staff
+from db import Unit, Product, Store, ProductUnitConversion, Staff, StockMovement
 from db import make_session
 from auth import is_logged_in, get_password_hash, decode_access_token
 from repo.StoreRepo import StoreRepo
@@ -24,7 +24,6 @@ class UnitAdmin(ModelView, model=Unit):
 
     def is_visible(self, request: Request) -> bool:
         return is_logged_in(request)   
-
 
 
 class ProductAdmin(ModelView, model=Product):
@@ -100,7 +99,7 @@ class InventoryAdmin(BaseView):
                     return await return_template_with_info("Unable to access required info from user's auth token. Contact Admin")
 
                 staff_id = payload.get("staff_id")
-                
+
                 if not staff_id:
                     return await return_template_with_info("Unable to access staff_id from user's auth token. Contact Admin")
 
@@ -145,6 +144,20 @@ class StaffAdmin(ModelView, model=Staff):
 
     async def on_model_change(self, data, model, is_created, request):
         data["password"] = get_password_hash(data["password"])
+
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+
+class StockMovementAdmin(ModelView, model=Product):
+    column_list = [StockMovement.movement_date, StockMovement.product_id, StockMovement.store_id, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorded_by, StockMovement.remarks]
+    column_sortable_list = [StockMovement.movement_date, StockMovement.movement_type]
+    can_delete = False
+    can_create = False
+    can_edit = False
 
     def is_accessible(self, request: Request) -> bool:
         return is_logged_in(request)
