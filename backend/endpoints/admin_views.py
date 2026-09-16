@@ -152,7 +152,7 @@ class StaffAdmin(ModelView, model=Staff):
         return is_logged_in(request)
 
 
-class StockMovementAdmin(ModelView, model=Product):
+class StockMovementAdmin(ModelView, model=StockMovement):
     column_list = [StockMovement.movement_date, StockMovement.product_id, StockMovement.store_id, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorded_by, StockMovement.remarks]
     column_sortable_list = [StockMovement.movement_date, StockMovement.movement_type]
     can_delete = False
