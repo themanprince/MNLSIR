@@ -159,7 +159,10 @@ class StaffAdmin(ModelView, model=Staff):
 
 class StockMovementAdmin(ModelView, model=StockMovement):
     column_list = [StockMovement.movement_date, StockMovement.product, StockMovement.store, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorder, StockMovement.remarks]
-    column_filters = [ForeignKeyFilter(StockMovement.product_id, Product.name, title="Product")]
+    column_filters = [
+        ForeignKeyFilter(StockMovement.store_id, Store.name, title="Store"),
+        ForeignKeyFilter(StockMovement.product_id, Product.name, title="Product")
+    ]
     column_sortable_list = [StockMovement.movement_date, StockMovement.movement_type]
     can_delete = False
     can_create = False
