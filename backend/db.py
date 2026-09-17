@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, ForeignKey, CheckConstraint, Integer, Stri
 from sqlalchemy.dialects.sqlite.json import JSON
 from datetime import datetime, date
 import enum
+import os
 
 
 Base = declarative_base()
@@ -194,8 +195,8 @@ class InterventionLog(Base):
     changed_at = mapped_column(DateTime, default=datetime.utcnow)
 
 
-
-engine = create_engine("sqlite:///./db_file.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sqlite_db_file.db")
+engine = create_engine(DATABASE_URL)
 
 make_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
