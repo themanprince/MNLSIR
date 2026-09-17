@@ -77,6 +77,10 @@ class InventoryAdmin(BaseView):
     @expose("/inventory", methods=["GET", "POST"])
     async def get_inventory_view(self, request):
         session = make_session()
+
+        async def return_template_with_info(message, products, stores):
+            return await self.templates.TemplateResponse(request, "inventory.html", {"message": message, "products": products, "stores": stores})
+
         try:
             products = await run_in_threadpool(ProductRepo(session = session).get_all_products)
             stores = await run_in_threadpool(StoreRepo.get_all_stores, session = session)
@@ -92,20 +96,18 @@ class InventoryAdmin(BaseView):
                     return await self.templates.TemplateResponse(request, "inventory.html", {"products": products, "stores": stores})
 
             elif request.method == "POST":
-                async def return_template_with_info(info):
-                    return await self.templates.TemplateResponse(request, "inventory.html", {"message": info, "products": products, "stores": stores})
-
+                
                 inventory_service = InventoryService(session = session)
 
                 token = request.session.get("token")
                 payload = decode_access_token(token)
                 if not payload:
-                    return await return_template_with_info("Unable to access required info from user's auth token. Contact Admin")
+                    return await return_template_with_info(message="Unable to access required info from user's auth token. Contact Admin", products=products, stores=stores)
 
                 staff_id = payload.get("staff_id")
 
                 if not staff_id:
-                    return await return_template_with_info("Unable to access staff_id from user's auth token. Contact Admin")
+                    return await return_template_with_info(message="Unable to access staff_id from user's auth token. Contact Admin", products=products, stores=stores)
 
                 form = await request.form()
                 store_id = int(form.get("store_id"))
@@ -121,7 +123,10 @@ class InventoryAdmin(BaseView):
                     remarks = remarks
                 )
 
-                return await return_template_with_info("Inventory Taking Successful")
+                return await return_template_with_info(message="Inventory Taking Successful", products=products, stores=stores)
+
+        except Exception as err:
+            return await return_template_with_info(message=str(err), stores=[], products=[])
 
         finally:
             session.close()
