@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 import os
 from exceptions import AuthError
-from db import make_session, Staff
+from db import make_session, Staff, StaffRole
 
 
 password_hash = PasswordHash.recommended()
@@ -56,9 +56,28 @@ def is_logged_in(request: Request):
     return True
 
 
+def is_admin(request: Request):
+    token = request.session.get("token")
+
+    if not token:
+        return False
+
+    payload = decode_access_token(token)
+    if not payload:
+        return False
+    
+    role = payload.get("role")
+
+    if not role == "admin":
+        return False
+
+    return True
+
+
 def create_superuser_staff(session: Session):
     super_user_name = os.getenv("SUPER_USER_NAME")
     super_user_password = os.getenv("SUPER_USER_PASSWORD")
+    super_user_role = os.getenv("SUPER_USER_ROLE")
 
     if not super_user_name or not super_user_password:
         raise AuthError("Please set env vars for SUPER_USER_NAME and SUPER_USER_PASSWORD")
@@ -68,10 +87,17 @@ def create_superuser_staff(session: Session):
     if existing_super_user:
         return
 
+    if (not super_user_role) or (super_user_role not in StaffRole):
+        super_user_role = "admin"
+
+    super_user_role = StaffRole(super_user_role)
+
     super_user_password = get_password_hash(super_user_password)
+
     super_user_staff = Staff(
         username = super_user_name,
         password = super_user_password,
+        role = super_user_role,
         first_name = super_user_name,
         last_name = super_user_name,
         other_names = super_user_name
@@ -101,6 +127,7 @@ class AuthAdmin(AuthenticationBackend):
             token = create_access_token({
                 "staff_id": staff.id,
                 "username": staff.username,
+                "role": staff.role,
                 "first_name": staff.first_name,
                 "last_name": staff.last_name
             })

@@ -7,12 +7,29 @@ import enum
 
 Base = declarative_base()
 
+
+class StaffRole(str, enum.Enum):
+    CEO = "CEO"
+    MANAGER = "manager"
+    LOGISTICS_MANGER = "logistics_manager"
+    STORE_SUPERVISOR = "store_supervisor"
+    ADMIN = "admin"
+    PROCUREMENT = "procurement"
+    ACCOUNTANT = "accountant"
+    RECEPTIONIST = "receptionist"
+    JANITOR = "janitor"
+    PA = "P.A."
+    DRIVER = "driver"
+    COOK = "cook"
+    SECURITY = "security"
+
 class Staff(Base):
     __tablename__ = "staff"
 
     id = mapped_column(Integer, primary_key=True)
     username = mapped_column(String, unique=True, nullable=False)
     password = mapped_column(String, nullable=False)
+    role = mapped_column(Enum(StaffRole), nullable=False)
     first_name = mapped_column(String, nullable=False)
     last_name = mapped_column(String, nullable=False)
     other_names = mapped_column(String, nullable=True)

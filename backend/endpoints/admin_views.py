@@ -7,7 +7,7 @@ from wtforms.validators import Regexp
 from decimal import Decimal
 from db import Unit, Product, Store, ProductUnitConversion, Staff, StockMovement
 from db import make_session
-from auth import is_logged_in, get_password_hash, decode_access_token
+from auth import is_logged_in, is_admin, get_password_hash, decode_access_token
 from repo.StoreRepo import StoreRepo
 from repo.ProductRepo import ProductRepo
 from service.LedgerService import LedgerService, SortOrder
@@ -29,7 +29,8 @@ class UnitAdmin(ModelView, model=Unit):
 
 
 class ProductAdmin(ModelView, model=Product):
-    column_list = [Product.sku, Product.name, Product.base_unit_id]
+    column_list = [Product.name, Product.sku, Product.base_unit_id]
+    form_columns = [Product.name, Product.sku, Product.base_unit]
     column_searchable_list = [Product.sku, Product.name]
     column_sortable_list = [Product.sku, Product.name]
     can_delete = False
@@ -125,13 +126,13 @@ class InventoryAdmin(BaseView):
         finally:
             session.close()
 
-            
+
 class StaffAdmin(ModelView, model=Staff):
     name_plural = "Staff"
-    column_list = [Staff.id, Staff.username, Staff.first_name, Staff.last_name, Staff.other_names] #columns to show in read/list view
-    form_columns = [Staff.username, Staff.password, Staff.first_name, Staff.last_name, Staff.other_names, Staff.other_details] #columns to show in create-form
+    column_list = [Staff.first_name, Staff.last_name, Staff.other_names] #columns to show in read/list view
+    form_columns = [Staff.username, Staff.password, Staff.first_name, Staff.last_name, Staff.other_names, Staff.role, Staff.other_details] #columns to show in create-form
     form_overrides = dict(password=PasswordField)
-    column_searchable_list = [Staff.username, Staff.first_name, Staff.last_name]
+    column_searchable_list = [Staff.username, Staff.first_name, Staff.last_name, Staff.role]
     column_sortable_list = [Staff.username, Staff.first_name, Staff.last_name]
     can_delete = False
 
@@ -150,10 +151,10 @@ class StaffAdmin(ModelView, model=Staff):
         data["password"] = get_password_hash(data["password"])
 
     def is_accessible(self, request: Request) -> bool:
-        return is_logged_in(request)
+        return is_admin(request)
 
     def is_visible(self, request: Request) -> bool:
-        return is_logged_in(request)
+        return is_admin(request)
 
 
 class StockMovementAdmin(ModelView, model=StockMovement):
