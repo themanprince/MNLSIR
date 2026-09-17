@@ -1,12 +1,19 @@
 from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column, relationship
-from sqlalchemy import create_engine, ForeignKey, CheckConstraint, UniqueConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
+from sqlalchemy import event, create_engine, ForeignKey, CheckConstraint, UniqueConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
 from sqlalchemy.dialects.sqlite.json import JSON
+from sqlalchemy.engine import Engine
 from datetime import datetime, date
 import enum
 import os
 
 
 Base = declarative_base()
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 class StaffRole(str, enum.Enum):
