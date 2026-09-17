@@ -86,11 +86,11 @@ def create_superuser_staff(session: Session):
 
     if existing_super_user:
         return
-
-    if (not super_user_role) or (super_user_role not in StaffRole):
-        super_user_role = "admin"
-
-    super_user_role = StaffRole(super_user_role)
+    
+    try:
+        super_user_role = StaffRole(super_user_role)
+    except Exception:
+        super_user_role = StaffRole("admin")
 
     super_user_password = get_password_hash(super_user_password)
 
