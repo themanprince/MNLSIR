@@ -1,6 +1,11 @@
 #### NOTE:
 This is a minor documentation to help you (Prince?) wishing to continue the project from where I stopped. These information were accurate to the best of my knnowledge as at the time of writing this README file. If anything has changed, then updates may have been made to the repo without a corresponding update of the README file.  
-
+  
+Also, other things to note about the application include:  
+* only Admin can create new staff (thus, it is adviseable to set default super user's role to Admin)
+* You can set info for default super user using the environment variables SUPER_USER_NAME, SUPER_USER_PASSWORD, SUPER_USER_ROLE
+* see env.example file for list of all environment variables required by the application
+  
 ## THE BACKEND
 *The MVP features implemented as of now include*
 * Stock Taking (inventory quantities recording)
