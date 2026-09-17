@@ -1,4 +1,5 @@
 from sqladmin import ModelView, BaseView, expose
+from sqladmin.filters import ForeignKeyFilter
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from wtforms import PasswordField
@@ -42,6 +43,7 @@ class ProductAdmin(ModelView, model=Product):
 
 class StoreAdmin(ModelView, model=Store):
     column_list = [Store.name]
+    form_columns = [Store.name]
     can_delete = False
 
     def is_accessible(self, request: Request) -> bool:
@@ -125,6 +127,7 @@ class InventoryAdmin(BaseView):
 
             
 class StaffAdmin(ModelView, model=Staff):
+    name_plural = "Staff"
     column_list = [Staff.id, Staff.username, Staff.first_name, Staff.last_name, Staff.other_names] #columns to show in read/list view
     form_columns = [Staff.username, Staff.password, Staff.first_name, Staff.last_name, Staff.other_names, Staff.other_details] #columns to show in create-form
     form_overrides = dict(password=PasswordField)
@@ -155,6 +158,7 @@ class StaffAdmin(ModelView, model=Staff):
 
 class StockMovementAdmin(ModelView, model=StockMovement):
     column_list = [StockMovement.movement_date, StockMovement.product_id, StockMovement.store_id, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorded_by, StockMovement.remarks]
+    column_filters = [ForeignKeyFilter(StockMovement.product_id, Product.name, title="Product")]
     column_sortable_list = [StockMovement.movement_date, StockMovement.movement_type]
     can_delete = False
     can_create = False
