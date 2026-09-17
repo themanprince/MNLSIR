@@ -63,6 +63,11 @@ def create_superuser_staff(session: Session):
     if not super_user_name or not super_user_password:
         raise AuthError("Please set env vars for SUPER_USER_NAME and SUPER_USER_PASSWORD")
 
+    existing_super_user = session.query(Staff).filter_by(username = super_user_name).first()
+
+    if existing_super_user:
+        return
+
     super_user_password = get_password_hash(super_user_password)
     super_user_staff = Staff(
         username = super_user_name,
