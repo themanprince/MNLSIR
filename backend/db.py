@@ -36,6 +36,9 @@ class Staff(Base):
     other_names = mapped_column(String, nullable=True)
     other_details = mapped_column(JSON)
 
+    def __str__(self):
+        return self.first_name
+
 
 class Store(Base):
     __tablename__ = "stores"
@@ -43,6 +46,9 @@ class Store(Base):
     id = mapped_column(Integer, primary_key=True)
     name = mapped_column(String, unique=True, nullable=False)
     created_at = mapped_column(Date, default=date.today)
+
+    def __str__(self):
+        return self.name
 
 
 class Product(Base):
@@ -143,6 +149,10 @@ class StockMovement(Base):
     
     created_at = mapped_column(DateTime, default=datetime.utcnow)
     updated_at = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    store = relationship("Store", primaryjoin="StockMovement.store_id == Store.id", uselist=False)
+    product = relationship("Product", primaryjoin="StockMovement.product_id == Product.id", uselist=False)
+    recorder = relationship("Staff", primaryjoin="StockMovement.recorded_by == Staff.id", uselist=False)
 
     __table_args__ = (
         CheckConstraint(

@@ -29,7 +29,7 @@ class UnitAdmin(ModelView, model=Unit):
 
 
 class ProductAdmin(ModelView, model=Product):
-    column_list = [Product.name, Product.sku, Product.base_unit_id]
+    column_list = [Product.name, Product.sku, Product.base_unit]
     form_columns = [Product.name, Product.sku, Product.base_unit]
     column_searchable_list = [Product.sku, Product.name]
     column_sortable_list = [Product.sku, Product.name]
@@ -55,7 +55,7 @@ class StoreAdmin(ModelView, model=Store):
 
 
 class ProductUnitConversionAdmin(ModelView, model=ProductUnitConversion):
-    column_list = [ProductUnitConversion.product_id, ProductUnitConversion.unit_id, ProductUnitConversion.multiplier_to_base]
+    column_list = [ProductUnitConversion.product, ProductUnitConversion.unit, ProductUnitConversion.multiplier_to_base]
     can_delete = False
 
     def is_accessible(self, request: Request) -> bool:
@@ -158,7 +158,7 @@ class StaffAdmin(ModelView, model=Staff):
 
 
 class StockMovementAdmin(ModelView, model=StockMovement):
-    column_list = [StockMovement.movement_date, StockMovement.product_id, StockMovement.store_id, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorded_by, StockMovement.remarks]
+    column_list = [StockMovement.movement_date, StockMovement.product, StockMovement.store, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorder, StockMovement.remarks]
     column_filters = [ForeignKeyFilter(StockMovement.product_id, Product.name, title="Product")]
     column_sortable_list = [StockMovement.movement_date, StockMovement.movement_type]
     can_delete = False
