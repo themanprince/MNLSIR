@@ -1,5 +1,5 @@
 from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column, relationship
-from sqlalchemy import create_engine, ForeignKey, CheckConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
+from sqlalchemy import create_engine, ForeignKey, CheckConstraint, UniqueConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
 from sqlalchemy.dialects.sqlite.json import JSON
 from datetime import datetime, date
 import enum
@@ -86,6 +86,10 @@ class ProductUnitConversion(Base):
 
     product = relationship("Product", primaryjoin="ProductUnitConversion.product_id == Product.id", uselist=False)
     unit = relationship("Unit", primaryjoin="ProductUnitConversion.unit_id == Unit.id", uselist=False)
+
+    __table_args__ = (
+        UniqueConstraint("product_id", "unit_id", name="unique_product_unit_combination"),
+    )
 
 
 class DocumentType(str, enum.Enum):
