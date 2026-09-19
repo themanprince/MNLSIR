@@ -1,0 +1,312 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Goods Receiving</h2>
+            <p class="text-muted mb-0">
+                Record stock received into a store.
+            </p>
+        </div>
+    </div>
+
+    {% if message %}
+        <div
+            class="alert alert-{{ message_type or 'info' }} alert-dismissible fade show"
+            role="alert"
+        >
+            {{ message }}
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+            ></button>
+        </div>
+    {% endif %}
+
+    {% if not stores %}
+        <div class="alert alert-warning">
+            No stores are available. Create a store before recording goods received.
+        </div>
+    {% endif %}
+
+    {% if not products %}
+        <div class="alert alert-warning">
+            No products are available. Create a product before recording goods received.
+        </div>
+    {% endif %}
+
+    <form method="post" action="/admin/goods-receiving" id="goods-receiving-form">
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>Receiving Details</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="store_id" class="form-label">
+                            Store
+                        </label>
+
+                        <select
+                            class="form-select"
+                            id="store_id"
+                            name="store_id"
+                            required
+                        >
+                            <option value="">Select a store</option>
+
+                            {% for store in stores %}
+                                <option
+                                    value="{{ store.id }}"
+                                    {% if form_data.store_id|string == store.id|string %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ store.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="date" class="form-label">
+                            Receiving Date
+                        </label>
+
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="date"
+                            name="date"
+                            value="{{ form_data.date or today }}"
+                            max="{{ today }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="source_party" class="form-label">
+                            Source / Supplier
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="source_party"
+                            name="source_party"
+                            value="{{ form_data.source_party or '' }}"
+                            maxlength="255"
+                            required
+                        >
+                    </div>
+
+                    <div class="col-12">
+                        <label for="remarks" class="form-label">
+                            Remarks
+                        </label>
+
+                        <textarea
+                            class="form-control"
+                            id="remarks"
+                            name="remarks"
+                            rows="2"
+                            maxlength="2000"
+                        >{{ form_data.remarks or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Received Items</strong>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    id="add-item-button"
+                >
+                    Add Item
+                </button>
+            </div>
+
+            <div class="card-body">
+                <div id="items-container"></div>
+
+                <div
+                    id="empty-items-message"
+                    class="alert alert-secondary mb-0"
+                >
+                    Add at least one product.
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button
+                type="reset"
+                class="btn btn-outline-secondary"
+                id="reset-form-button"
+            >
+                Clear
+            </button>
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+                {% if not stores or not products %}
+                    disabled
+                {% endif %}
+            >
+                Record Goods Received
+            </button>
+        </div>
+    </form>
+</div>
+
+<template id="item-row-template">
+    <div class="received-item-row border rounded p-3 mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">Product</label>
+
+                <select
+                    class="form-select product-select"
+                    name="product_id"
+                    required
+                >
+                    <option value="">Select a product</option>
+
+                    {% for product in products %}
+                        <option value="{{ product.id }}">
+                            {{ product.name }} — {{ product.sku }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Unit</label>
+
+                <select
+                    class="form-select unit-select"
+                    name="unit_id"
+                    required
+                    disabled
+                >
+                    <option value="">Select a product first</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Quantity</label>
+
+                <input
+                    type="number"
+                    class="form-control quantity-input"
+                    name="quantity"
+                    min="0.0001"
+                    step="0.0001"
+                    inputmode="decimal"
+                    required
+                >
+            </div>
+
+            <div class="col-md-2">
+                <button
+                    type="button"
+                    class="btn btn-outline-danger remove-item-button w-100"
+                >
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    const productUnits = {{ product_units | tojson }};
+    const itemsContainer = document.getElementById("items-container");
+    const itemTemplate = document.getElementById("item-row-template");
+    const addItemButton = document.getElementById("add-item-button");
+    const emptyItemsMessage = document.getElementById("empty-items-message");
+    const resetFormButton = document.getElementById("reset-form-button");
+
+    function updateEmptyItemsMessage() {
+        const hasItems = itemsContainer.children.length > 0;
+        emptyItemsMessage.classList.toggle("d-none", hasItems);
+    }
+
+    function populateUnits(productSelect, unitSelect) {
+        const productId = productSelect.value;
+        const units = productUnits[productId] || [];
+
+        unitSelect.innerHTML = "";
+
+        if (!productId || units.length === 0) {
+            unitSelect.disabled = true;
+
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "No units configured";
+            unitSelect.appendChild(option);
+
+            return;
+        }
+
+        unitSelect.disabled = false;
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select a unit";
+        unitSelect.appendChild(placeholder);
+
+        units.forEach((unit) => {
+            const option = document.createElement("option");
+            option.value = unit.id;
+            option.textContent = `${unit.name} (${unit.symbol})`;
+            unitSelect.appendChild(option);
+        });
+
+        if (units.length === 1) {
+            unitSelect.value = String(units[0].id);
+        }
+    }
+
+    function addItemRow() {
+        const row = itemTemplate.content.cloneNode(true);
+        const rowElement = row.querySelector(".received-item-row");
+        const productSelect = row.querySelector(".product-select");
+        const unitSelect = row.querySelector(".unit-select");
+        const removeButton = row.querySelector(".remove-item-button");
+
+        productSelect.addEventListener("change", () => {
+            populateUnits(productSelect, unitSelect);
+        });
+
+        removeButton.addEventListener("click", () => {
+            rowElement.remove();
+            updateEmptyItemsMessage();
+        });
+
+        itemsContainer.appendChild(row);
+        updateEmptyItemsMessage();
+    }
+
+    addItemButton.addEventListener("click", addItemRow);
+
+    resetFormButton.addEventListener("click", () => {
+        window.setTimeout(() => {
+            itemsContainer.innerHTML = "";
+            addItemRow();
+        }, 0);
+    });
+
+    // Always begin with one receiving line.
+    addItemRow();
+</script>
+{% endblock %}
