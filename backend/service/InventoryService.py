@@ -90,7 +90,8 @@ class InventoryService:
                     document_line_id = document_line.id,
                     movement_type = MovementType.RECIEVE if isinstance(payload, ReceiveStockRequest) else MovementType.ISSUE,
                     quantity_delta = base_quantity if isinstance(payload, ReceiveStockRequest) else -base_quantity,
-                    movement_date = payload.date
+                    movement_date = payload.date,
+                    remarks = remarks
                 )
 
                 self.session.add(movement)
