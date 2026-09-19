@@ -36,7 +36,7 @@ class UnitService:
 
 
     def get_all_units(self):
-        all_units = self.session.query(Unit).order_by(Unit.asc()).all()
+        all_units = self.session.query(Unit).order_by(Unit.name.asc()).all()
         return [
             {"unit_id": unit.id, "unit_name": unit.name, "unit_symbol": unit.symbol}
             for unit in all_units
