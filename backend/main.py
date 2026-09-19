@@ -51,6 +51,6 @@ admin.add_view(GoodsReceivingAdmin)
 
 
 if __name__ == "__main__":
-	importd uvicorn
+	import uvicorn
 	PORT = int(os.getenv("PORT", 8000))
 	uvicorn.run("main:app", host="0.0.0.0", port=PORT,reload=False)
