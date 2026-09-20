@@ -1,0 +1,279 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container-fluid goods-received-ledger">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Goods Received Ledger</h2>
+
+            {% if selected_store %}
+                <p class="text-muted mb-0">
+                    Store: <strong>{{ selected_store.name }}</strong>
+                </p>
+            {% else %}
+                <p class="text-muted mb-0">
+                    Select a store to view its receiving history.
+                </p>
+            {% endif %}
+        </div>
+
+        {% if selected_store %}
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                onclick="window.print()"
+            >
+                Print
+            </button>
+        {% endif %}
+    </div>
+
+    {% if message %}
+        <div
+            class="alert alert-{{ message_type or 'info' }} alert-dismissible fade show"
+            role="alert"
+        >
+            {{ message }}
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+            ></button>
+        </div>
+    {% endif %}
+
+    <div class="card mb-4 no-print">
+        <div class="card-body">
+            <form
+                method="get"
+                action="/admin/goods-received-ledger"
+                class="row g-3 align-items-end"
+            >
+                <div class="col-md-8">
+                    <label for="store_id" class="form-label">
+                        Store
+                    </label>
+
+                    <select
+                        id="store_id"
+                        name="store_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">Select a store</option>
+
+                        {% for store in stores %}
+                            <option
+                                value="{{ store.id }}"
+                                {% if selected_store and selected_store.id == store.id %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ store.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+                        View Ledger
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if not selected_store %}
+        <div class="alert alert-info">
+            Select a store to view its Goods Received Ledger.
+        </div>
+    {% elif not documents %}
+        <div class="alert alert-secondary">
+            No goods received have been recorded for this store.
+        </div>
+    {% else %}
+        <div class="ledger-sections">
+            {% for document in documents %}
+                <section class="received-document-section">
+                    <div class="received-document-header">
+                        <div>
+                            <h4 class="mb-1">
+                                Goods Received
+                            </h4>
+
+                            <div>
+                                <strong>Source:</strong>
+                                {{ document.source_party or "Not specified" }}
+                            </div>
+
+                            <div>
+                                <strong>Date:</strong>
+                                {{ document.date.strftime("%d %b %Y") }}
+                            </div>
+                        </div>
+
+                        <div class="text-md-end">
+                            {% if document.reference_no %}
+                                <div>
+                                    <strong>Reference:</strong>
+                                    {{ document.reference_no }}
+                                </div>
+                            {% endif %}
+
+                            <div>
+                                <strong>Document:</strong>
+                                #{{ document.id }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if document.remarks %}
+                        <div class="received-document-remarks">
+                            <strong>Remarks:</strong>
+                            {{ document.remarks }}
+                        </div>
+                    {% endif %}
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity received</th>
+                                    <th>Unit</th>
+                                    <th>Recorded by</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for line in document.lines %}
+                                    <tr>
+                                        <td>
+                                            {{ line.product.name }}
+                                        </td>
+
+                                        <td>
+                                            {{ line.entered_quantity }}
+                                        </td>
+
+                                        <td>
+                                            {{ line.entered_unit.symbol }}
+                                        </td>
+
+                                        <td>
+                                            {{ line.recorder.first_name }}
+                                            {{ line.recorder.last_name }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="received-document-signatures">
+                        <strong>Recorder signature:</strong>
+
+                        {% for line in document.lines | unique(attribute="recorded_by") %}
+                            <span class="signature-block">
+                                {{ line.recorder.first_name }}
+                                {{ line.recorder.last_name }}
+                                <span class="signature-line">
+                                    ____________________
+                                </span>
+                            </span>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .received-document-section {
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        background: #fff;
+        break-inside: avoid;
+    }
+
+    .received-document-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .received-document-remarks {
+        padding: 0.75rem 0;
+    }
+
+    .received-document-signatures {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .signature-block {
+        display: inline-flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .signature-line {
+        white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+        .received-document-header {
+            flex-direction: column;
+        }
+
+        .text-md-end {
+            text-align: left !important;
+        }
+
+        .received-document-section {
+            padding: 0.75rem;
+        }
+
+        .received-document-signatures {
+            flex-direction: column;
+        }
+    }
+
+    @media print {
+        .no-print,
+        .no-print *,
+        .navbar,
+        .sidebar {
+            display: none !important;
+        }
+
+        .content,
+        .container,
+        .container-fluid {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .received-document-section {
+            border: 1px solid #000;
+        }
+    }
+</style>
+{% endblock %}

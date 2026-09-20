@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
 from db import Base, engine, make_session
-from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, InventoryAdmin, StaffAdmin, StockMovementAdmin, GoodsReceivingAdmin
+from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, InventoryAdmin, StaffAdmin, StockMovementAdmin, GoodsReceivingAdmin, GoodsReceivedLedgerAdmin
 from auth import AuthAdmin, create_superuser_staff
 import os
 from dotenv import load_dotenv
@@ -48,6 +48,7 @@ admin.add_view(InventoryAdmin)
 admin.add_view(StaffAdmin)
 admin.add_view(StockMovementAdmin)
 admin.add_view(GoodsReceivingAdmin)
+admin.add_view(GoodsReceivedLedgerAdmin)
 
 
 if __name__ == "__main__":

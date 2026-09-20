@@ -47,6 +47,19 @@ class InventoryService:
 
             for item in payload.items:
 
+                line_recorded_by = item.recorded_by or payload.recorded_by
+
+                recorder = (
+                    self.session.query(Staff)
+                    .filter(Staff.id == line_recorded_by)
+                    .first()
+                )
+            
+                if not recorder:
+                    raise ReceiveIssueStockError(
+                        f"Staff with id {line_recorded_by} does not exist"
+                    )
+                
                 base_quantity = self.unit_service.to_base(
                     product_id=item.product_id,
                     quantity=item.quantity,
@@ -77,14 +90,15 @@ class InventoryService:
                     product_id = item.product_id,
                     entered_quantity = item.quantity,
                     entered_unit_id = item.unit_id,
-                    base_quantity = base_quantity
+                    base_quantity = base_quantity,
+                    recorded_by = line_recorded_by
                 )
 
                 self.session.add(document_line)
                 self.session.flush()
 
                 movement =  StockMovement(
-                    recorded_by = payload.recorded_by,
+                    recorded_by = line_recorded_by,
                     store_id = payload.store_id,
                     product_id = item.product_id,
                     document_line_id = document_line.id,

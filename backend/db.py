@@ -121,6 +121,18 @@ class Document(Base): # e.g. GoodsReceived, Dispatch, Stock-Requisition-Form etc
     remarks = mapped_column(Text)
     created_at = mapped_column(DateTime, default=datetime.utcnow)
     updated_at = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    store = relationship(
+        "Store",
+        primaryjoin="Document.store_id == Store.id",
+        uselist=False,
+    )
+    
+    lines = relationship(
+        "DocumentLine",
+        back_populates="document",
+        order_by="DocumentLine.id"
+    )
 
 
 class DocumentLine(Base):
@@ -134,7 +146,35 @@ class DocumentLine(Base):
     base_quantity = mapped_column(Numeric(12, 4))
     #see comment likely still in Document table for explanation of why I put the columns(source_party and destination_party) here and also made them optional
     source_party = mapped_column(String, nullable=True)
-    destination_party = mapped_column(String, nullable=True)
+    destination_party = mapped_column(String, nullable=True)    
+    recorded_by = mapped_column(
+        ForeignKey("staff.id"),
+        nullable=False,
+    ) # The staff member responsible for recording/preparing this line.
+    
+    document = relationship(
+        "Document",
+        back_populates="lines",
+    )
+
+    product = relationship(
+        "Product",
+        primaryjoin="DocumentLine.product_id == Product.id",
+        uselist=False,
+    )
+
+    entered_unit = relationship(
+        "Unit",
+        primaryjoin="DocumentLine.entered_unit_id == Unit.id",
+        uselist=False,
+    )
+
+    recorder = relationship(
+        "Staff",
+        primaryjoin="DocumentLine.recorded_by == Staff.id",
+        uselist=False,
+    )
+
 
 
 class MovementType(str, enum.Enum):

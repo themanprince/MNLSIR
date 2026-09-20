@@ -14,6 +14,7 @@ from db import make_session
 from auth import is_logged_in, is_admin, get_password_hash, decode_access_token
 from repo.StoreRepo import StoreRepo
 from repo.ProductRepo import ProductRepo
+from repo.GoodsReceivedRepo import GoodsReceivedRepo
 from service.LedgerService import LedgerService, SortOrder
 from service.InventoryService import InventoryService
 from schema.ReceiveIssueItem import ReceiveIssueItem
@@ -234,7 +235,7 @@ class StockMovementAdmin(ModelView, model=StockMovement):
 
 
 class GoodsReceivingAdmin(BaseView):
-    name = "Goods Receiving"
+    name = "Receive Goods"
     
     def is_accessible(self, request: Request) -> bool:
         return is_logged_in(request)
@@ -587,6 +588,111 @@ class GoodsReceivingAdmin(BaseView):
                 message=(
                     "The goods receiving transaction could not be recorded. "
                     "Please try again or contact an administrator."
+                ),
+                message_type="danger",
+            )
+
+        finally:
+            session.close()
+
+
+class GoodsReceivedLedgerAdmin(BaseView):
+    name = "Goods Received Ledger"
+    icon = "fa-solid fa-book"
+
+    def is_accessible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    def is_visible(self, request: Request) -> bool:
+        return is_logged_in(request)
+
+    async def _render(
+        self,
+        request: Request,
+        *,
+        stores,
+        selected_store=None,
+        documents=None,
+        message=None,
+        message_type="info",
+    ):
+        return await self.templates.TemplateResponse(
+            request,
+            "goods_received_ledger.html",
+            {
+                "request": request,
+                "stores": stores,
+                "selected_store": selected_store,
+                "documents": documents or [],
+                "message": message,
+                "message_type": message_type,
+            },
+        )
+
+    @expose("/goods-received-ledger", methods=["GET"])
+    async def goods_received_ledger(self, request: Request):
+        session = make_session()
+
+        try:
+            stores = (
+                session.query(Store)
+                .order_by(Store.name.asc())
+                .all()
+            )
+
+            store_id_value = request.query_params.get("store_id")
+
+            if not store_id_value:
+                return await self._render(
+                    request,
+                    stores=stores,
+                )
+
+            try:
+                store_id = int(store_id_value)
+            except (TypeError, ValueError):
+                return await self._render(
+                    request,
+                    stores=stores,
+                    message="The selected store is invalid.",
+                    message_type="danger",
+                )
+
+            selected_store = (
+                session.query(Store)
+                .filter(Store.id == store_id)
+                .first()
+            )
+
+            if not selected_store:
+                return await self._render(
+                    request,
+                    stores=stores,
+                    message="The selected store does not exist.",
+                    message_type="danger",
+                )
+
+            documents = GoodsReceivedRepo.get_for_store(
+                session=session,
+                store_id=store_id,
+            )
+
+            return await self._render(
+                request,
+                stores=stores,
+                selected_store=selected_store,
+                documents=documents,
+            )
+
+        except Exception:
+            session.rollback()
+
+            return await self._render(
+                request,
+                stores=[],
+                message=(
+                    "The goods received ledger could not be loaded. "
+                    "Please try again."
                 ),
                 message_type="danger",
             )
