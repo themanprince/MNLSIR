@@ -165,7 +165,7 @@ class InventoryService:
                 product_id = product_id,
                 movement_type = MovementType.STOCKTAKE,
                 quantity_delta = Decimal("0"), # this is an adjustment stock movement.. the stock balance should be changed to the set target_quantity, and not be calculated based on some quantity_delta
-                target_quantity = target_quantity,
+                target_quantity = quantity_in_base_unit,
                 remarks = remarks,
                 movement_date = stocktake_date #explicitly passed, as guard against delayed submissions
             )
@@ -181,7 +181,7 @@ class InventoryService:
                 source_action_type = action_type,
                 concerned_movement_id = stock_movement.id,
                 old_value_snapshot = current_quantity,
-                new_value_snapshot = target_quantity,
+                new_value_snapshot = quantity_in_base_unit,
                 remarks = remarks
             )
 
