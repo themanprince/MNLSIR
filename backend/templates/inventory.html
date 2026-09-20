@@ -227,7 +227,8 @@
             options,
         );
     </script>
-    <script>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
 <script>
     const productUnits = {{ product_units | default({}) | tojson }};
 
@@ -278,5 +279,4 @@
     // Populate correctly if the form is returned with a selected product.
     populateUnits();
 </script>
-    </script>
 {% endblock %}
