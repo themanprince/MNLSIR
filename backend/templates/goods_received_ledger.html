@@ -117,20 +117,6 @@
                                 {{ document.date.strftime("%d %b %Y") }}
                             </div>
                         </div>
-
-                        <div class="text-md-end">
-                            {% if document.reference_no %}
-                                <div>
-                                    <strong>Reference:</strong>
-                                    {{ document.reference_no }}
-                                </div>
-                            {% endif %}
-
-                            <div>
-                                <strong>Document:</strong>
-                                #{{ document.id }}
-                            </div>
-                        </div>
                     </div>
 
                     {% if document.remarks %}
@@ -174,20 +160,6 @@
                                 {% endfor %}
                             </tbody>
                         </table>
-                    </div>
-
-                    <div class="received-document-signatures">
-                        <strong>Recorder signature:</strong>
-
-                        {% for line in document.lines | unique(attribute="recorded_by") %}
-                            <span class="signature-block">
-                                {{ line.recorder.first_name }}
-                                {{ line.recorder.last_name }}
-                                <span class="signature-line">
-                                    ____________________
-                                </span>
-                            </span>
-                        {% endfor %}
                     </div>
                 </section>
             {% endfor %}

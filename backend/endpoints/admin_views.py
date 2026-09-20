@@ -598,7 +598,6 @@ class GoodsReceivingAdmin(BaseView):
 
 class GoodsReceivedLedgerAdmin(BaseView):
     name = "Goods Received Ledger"
-    icon = "fa-solid fa-book"
 
     def is_accessible(self, request: Request) -> bool:
         return is_logged_in(request)
