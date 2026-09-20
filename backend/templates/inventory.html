@@ -164,7 +164,7 @@
                                     id="product_id"
                                 >
                                     {% for product in products %}
-                                        <option value="{{ product.id }}">{{ product.name }} ({{product.base_unit_symbol}})</option>
+                                        <option value="{{ product.id }}">{{ product.name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -175,7 +175,19 @@
                                     name="quantity"
                                     id="quantity"
                                     class="form-control"
+                                    min="0"
+                                            step="0.0001"
+                                            inputmode="decimal"
                                 />                            
+                            </div>
+                            <div class="mb-3">
+                                <label for="unit_id" class="form-label">
+                                    Quantity Unit
+                                </label>
+
+                                <select class="form-select form-select-lg" name="unit_id" id="unit_id" required disabled>
+                                    <option value="">Select a product first</option>
+                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="remarks" class="form-label">Remarks (Optional)</label>
@@ -214,5 +226,57 @@
             document.getElementById("modalId"),
             options,
         );
+    </script>
+    <script>
+<script>
+    const productUnits = {{ product_units | default({}) | tojson }};
+
+    const productSelect = document.getElementById("product_id");
+    const unitSelect = document.getElementById("unit_id");
+
+    function populateUnits() {
+        const productId = productSelect.value;
+        const units = productUnits[productId] || [];
+
+        unitSelect.innerHTML = "";
+
+        if (!productId || units.length === 0) {
+            unitSelect.disabled = true;
+
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "No units configured";
+            unitSelect.appendChild(option);
+
+            return;
+        }
+
+        unitSelect.disabled = false;
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select a unit";
+        unitSelect.appendChild(placeholder);
+
+        units.forEach((unit) => {
+            const option = document.createElement("option");
+
+            option.value = unit.id;
+            option.textContent = `${unit.name} (${unit.symbol})`;
+
+            unitSelect.appendChild(option);
+        });
+
+        // Automatically select the base unit when it is the only option.
+        if (units.length === 1) {
+            unitSelect.value = String(units[0].id);
+        }
+    }
+
+    productSelect.addEventListener("change", populateUnits);
+
+    // Populate correctly if the form is returned with a selected product.
+    populateUnits();
+</script>
     </script>
 {% endblock %}

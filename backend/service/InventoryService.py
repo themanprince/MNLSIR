@@ -110,7 +110,7 @@ class InventoryService:
     
 
 
-    def submit_stocktake(self, recorded_by:int, store_id: int, product_id: int, target_quantity: Decimal, remarks: str, stocktake_date:date = date.today()) -> StockMovement:
+    def submit_stocktake(self, recorded_by:int, store_id: int, product_id: int, remarks: str, target_quantity: Decimal, target_unit_id: int | None = None, stocktake_date:date = date.today()) -> StockMovement:
         # this handles some scenarios as follows
         # 1. the scenario where store keeper needs to update digital stock balance of a product to align with its physical stock balance, in cases of observed but inexplainable discrepancies
         # 2. fresh inventory taking
@@ -126,6 +126,20 @@ class InventoryService:
         product = self.session.query(Product).filter(Product.id == product_id).first()
         if not product:
             raise SubmitStockTakeError(f"Product with id {product_id} does not exist")
+        
+        # If no unit is provided, preserve the existing behavior:
+        # target_quantity is assumed to already be in the base unit.
+        quantity_in_base_unit = target_quantity
+
+        if target_unit_id is not None:
+            try:
+                quantity_in_base_unit = self.unit_service.to_base(
+                product_id=product_id,
+                    quantity=target_quantity,
+                    from_unit_id=target_unit_id,
+            )
+            except Exception as error:
+                raise SubmitStockTakeError(str(error)) from error
         
         transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
             self.session.begin_nested()
