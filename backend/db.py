@@ -1,5 +1,5 @@
-from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column, relationship
-from sqlalchemy import event, create_engine, ForeignKey, CheckConstraint, UniqueConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime
+from sqlalchemy.orm import sessionmaker, declarative_base, mapped_column, relationship, column_property
+from sqlalchemy import event, create_engine, ForeignKey, CheckConstraint, UniqueConstraint, Integer, String, Numeric, Enum, Text, Date, DateTime, select
 from sqlalchemy.dialects.sqlite.json import JSON
 from sqlalchemy.engine import Engine
 from datetime import datetime, date
@@ -190,6 +190,31 @@ class StockMovement(Base):
     movement_date = mapped_column(Date, nullable=False, default=date.today)
     product_id = mapped_column(ForeignKey("products.id"), nullable=False)
     document_line_id = mapped_column(ForeignKey("document_lines.id"))
+    source_party = column_property(
+        select(Document.source_party)
+        .join(
+            DocumentLine,
+            DocumentLine.document_id == Document.id,
+        )
+        .where(
+            DocumentLine.id == document_line_id,
+        )
+        .correlate_except(Document, DocumentLine)
+        .scalar_subquery()
+    )
+
+    destination_party = column_property(
+        select(Document.destination_party)
+        .join(
+            DocumentLine,
+            DocumentLine.document_id == Document.id,
+        )
+        .where(
+            DocumentLine.id == document_line_id,
+        )
+        .correlate_except(Document, DocumentLine)
+        .scalar_subquery()
+    )
     movement_type = mapped_column(Enum(MovementType), nullable=False)
     quantity_delta = mapped_column(Numeric(12, 4)) #how much was received / issued in this stock movement e.g. +2pcs biscuit, -10ctns yoghurt
     remarks = mapped_column(String)

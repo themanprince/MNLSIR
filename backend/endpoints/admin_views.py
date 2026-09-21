@@ -219,12 +219,34 @@ class StaffAdmin(ModelView, model=Staff):
 
 
 class StockMovementAdmin(ModelView, model=StockMovement):
-    column_list = [StockMovement.movement_date, StockMovement.product, StockMovement.store, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorder, StockMovement.remarks]
+    name = "Stock Movements"
+    name_plural = "Stock Movements"
+
+    column_list = [StockMovement.movement_date, StockMovement.store, StockMovement.source_party, StockMovement.destination_party, StockMovement.product, StockMovement.movement_type, StockMovement.quantity_delta, StockMovement.running_balance, StockMovement.recorder, StockMovement.remarks]
+
+    column_labels = {
+        StockMovement.movement_date: "Date",
+        StockMovement.product: "Product",
+        StockMovement.store: "Store",
+        StockMovement.movement_type: "Type",
+        StockMovement.source_party: "Source",
+        StockMovement.destination_party: "Destination",
+        StockMovement.quantity_delta: "Quantity Change",
+        StockMovement.running_balance: "Balance",
+        StockMovement.recorder: "Recorded By",
+        StockMovement.remarks: "Remarks",
+    }
+
     column_filters = [
         ForeignKeyFilter(StockMovement.store_id, Store.name, title="Store"),
         ForeignKeyFilter(StockMovement.product_id, Product.name, title="Product")
     ]
     column_sortable_list = [StockMovement.movement_date, StockMovement.movement_type]
+
+    column_searchable_list = [
+        StockMovement.remarks,
+    ]
+
     can_delete = False
     can_create = False
     can_edit = False
@@ -293,7 +315,7 @@ class GoodsReceivingAdmin(BaseView):
                 "Store",
             )
 
-            transaction_date = form.get("date")
+            transaction_date = str(form.get("date"))
             if not transaction_date:
                 raise ValueError("Receiving date is required.")
 
@@ -302,11 +324,11 @@ class GoodsReceivingAdmin(BaseView):
             except ValueError:
                 raise ValueError("Receiving date is invalid.")
 
-            source_party = (form.get("source_party") or "").strip()
+            source_party = (str(form.get("source_party")) or "").strip()
             if not source_party:
                 raise ValueError("Source party is required.")
 
-            remarks = (form.get("remarks") or "").strip()
+            remarks = (str(form.get("remarks")) or "").strip()
 
             items = StockTransactionForm.parse_items(form)
             store = session.query(Store).filter_by(id=store_id).first()
@@ -547,7 +569,7 @@ class DispatchAdmin(BaseView):
                 "Store",
             )
 
-            dispatch_date_value = form.get("date")
+            dispatch_date_value = str(form.get("date"))
 
             if not dispatch_date_value:
                 raise ValueError(
@@ -564,11 +586,11 @@ class DispatchAdmin(BaseView):
                 )
 
             destination_vessel = (
-                form.get("destination_vessel") or ""
+                str(form.get("destination_vessel")) or ""
             ).strip()
 
             remarks = (
-                form.get("remarks") or ""
+                str(form.get("remarks")) or ""
             ).strip()
 
             items = StockTransactionForm.parse_items(form)
