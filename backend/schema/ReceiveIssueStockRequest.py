@@ -17,3 +17,11 @@ class ReceiveStockRequest(ReceiveIssueStockRequest):
 
 class IssueStockRequest(ReceiveIssueStockRequest):
     dest_party: str #destination party ... who are the products issued to
+
+class DispatchStockRequest(ReceiveIssueStockRequest):
+    """
+    A dispatch removes stock from the store and records the vessel
+    receiving the dispatched products.
+    """
+
+    destination_vessel: str

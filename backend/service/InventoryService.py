@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from db import Document, DocumentType, DocumentLine, StockMovement, MovementType, StockBalance, InterventionLog, ActionType, Store, Staff, Product
-from schema.ReceiveIssueStockRequest import ReceiveStockRequest, IssueStockRequest
+from schema.ReceiveIssueStockRequest import ReceiveIssueStockRequest, ReceiveStockRequest, IssueStockRequest, DispatchStockRequest
 from service.UnitService import UnitService
 from service.StockService import StockService
 from exceptions import ReceiveIssueStockError
@@ -18,111 +18,215 @@ class InventoryService:
     
     
     def receive_issue_stock(self, payload: ReceiveStockRequest | IssueStockRequest):
-        if payload.date > date.today():
-            raise ReceiveIssueStockError("Please check date entered. Cannot Receive/Issue Stock in the future")
-        
-        if any([item.quantity <= 0 for item in payload.items]):
-            raise ReceiveIssueStockError("Please check quantities of items to Receive/Issue. Cannot have zero(0) or -negative quantity")
+        #this method was initially retained for backwards compatibility with code already using it... asides that, it is redundant to have a method whose only code is calling another method... lol
+        return self._record_stock_document(payload)
 
-        if not payload.items:
-            raise ReceiveIssueStockError("No products were specified for receiving/issuing. Please specify products/quantities to receive")
+    def dispatch_stock(self, payload: DispatchStockRequest):
+        return self._record_stock_document(payload)
 
-        transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
+    def _record_stock_document(
+        self,
+        payload: ReceiveIssueStockRequest,
+    ):
+        self._validate_stock_document_payload(payload)
+
+        if isinstance(payload, DispatchStockRequest):
+            self._validate_dispatch_products(payload)
+
+        document_type = self._get_document_type(payload)
+        movement_type = self._get_movement_type(payload)
+        quantity_sign = self._get_quantity_sign(payload)
+
+        transaction_context = (
             self.session.begin_nested()
             if self.session.in_transaction()
             else self.session.begin()
         )
-        with transaction_context: #transaction
+
+        with transaction_context:
             document = Document(
-                document_type = DocumentType.GOODS_RECEIVED if isinstance(payload, ReceiveStockRequest) else DocumentType.ISSUE_RECORDS,
-                store_id = payload.store_id,
-                date = payload.date,
-                source_party = payload.source_party if isinstance(payload, ReceiveStockRequest) else None,
-                destination_party = payload.dest_party if isinstance(payload, IssueStockRequest) else None,
-                remarks = payload.remarks
+                document_type=document_type,
+                store_id=payload.store_id,
+                date=payload.date,
+                source_party=self._get_source_party(payload),
+                destination_party=self._get_destination_party(payload),
+                remarks=payload.remarks,
             )
 
             self.session.add(document)
             self.session.flush()
 
+            product_ids = set()
+
             for item in payload.items:
-
-                line_recorded_by = item.recorded_by or payload.recorded_by
-
-                recorder = (
-                    self.session.query(Staff)
-                    .filter(Staff.id == line_recorded_by)
-                    .first()
+                line_recorded_by = (
+                    item.recorded_by
+                    if item.recorded_by is not None
+                    else payload.recorded_by
                 )
-            
-                if not recorder:
-                    raise ReceiveIssueStockError(
-                        f"Staff with id {line_recorded_by} does not exist"
-                    )
-                
+
+                self._get_staff_or_raise(line_recorded_by)
+
                 base_quantity = self.unit_service.to_base(
                     product_id=item.product_id,
                     quantity=item.quantity,
-                    from_unit_id=item.unit_id
+                    from_unit_id=item.unit_id,
                 )
 
-                """
-                # I commented out this code to allow issuing even on insufficient quantities. Here's why..
-                # Sometimes, physical inventory may not agree with records on the software.
-                # For instance, a scenario where the physical inventory is sufficient but the software's inventory is not.
-                # Such scenario may result from improper recording in the past, which could be fixed later on by the user.
-                # However, it should not lead to loss of present records which could result if the present issuing is prevented
-                # due to insufficient quantity according to the software's records.
-                
-                if isinstance(payload, IssueStockRequest):
-                    product_balance = self.session.query(StockBalance).filter_by(
-                        store_id = payload.store_id, product_id = item.product_id
-                    ).with_for_update().one_or_none()
-                    
-                    qty_avail = product_balance.quantity if product_balance else 0
-                    
-                    if qty_avail - base_quantity < 0:
-                        raise ReceiveIssueStockError(f"Cannot issue product with id {item.product_id}. Insufficient Quantity Available in store")
-                """
-
                 document_line = DocumentLine(
-                    document_id = document.id,
-                    product_id = item.product_id,
-                    entered_quantity = item.quantity,
-                    entered_unit_id = item.unit_id,
-                    base_quantity = base_quantity,
-                    recorded_by = line_recorded_by
+                    document_id=document.id,
+                    product_id=item.product_id,
+                    entered_quantity=item.quantity,
+                    entered_unit_id=item.unit_id,
+                    base_quantity=base_quantity,
+                    recorded_by=line_recorded_by,
                 )
 
                 self.session.add(document_line)
                 self.session.flush()
 
-                movement =  StockMovement(
-                    recorded_by = line_recorded_by,
-                    store_id = payload.store_id,
-                    product_id = item.product_id,
-                    document_line_id = document_line.id,
-                    movement_type = MovementType.RECIEVE if isinstance(payload, ReceiveStockRequest) else MovementType.ISSUE,
-                    quantity_delta = base_quantity if isinstance(payload, ReceiveStockRequest) else -base_quantity,
-                    movement_date = payload.date,
-                    remarks = payload.remarks
+                movement = StockMovement(
+                    recorded_by=line_recorded_by,
+                    store_id=payload.store_id,
+                    product_id=item.product_id,
+                    document_line_id=document_line.id,
+                    movement_type=movement_type,
+                    quantity_delta=quantity_sign * base_quantity,
+                    movement_date=payload.date,
+                    remarks=payload.remarks,
                 )
 
                 self.session.add(movement)
-            
-            # advised to put these outside the loop for performance reasons
+                product_ids.add(item.product_id)
+
             self.session.flush()
 
-            for item in payload.items:
+            for product_id in product_ids:
                 self.stock_service.recalculate(
                     store_id=payload.store_id,
-                    product_id = item.product_id,
-                    from_movement_date=payload.date
+                    product_id=product_id,
+                    from_movement_date=payload.date,
                 )
 
             return document
-    
 
+    @staticmethod
+    def _validate_stock_document_payload(
+        payload: ReceiveIssueStockRequest,
+    ):
+        if payload.date > date.today():
+            raise ReceiveIssueStockError(
+                "Please check date entered. "
+                "Cannot receive, issue, or dispatch stock in the future."
+            )
+
+        if not payload.items:
+            raise ReceiveIssueStockError(
+                "No products were specified. "
+                "Please specify products and quantities."
+            )
+
+        if any(item.quantity <= 0 for item in payload.items):
+            raise ReceiveIssueStockError(
+                "Quantities must be greater than zero."
+            )
+
+    @staticmethod
+    def _validate_dispatch_products(
+        payload: DispatchStockRequest,
+    ):
+        product_ids = [item.product_id for item in payload.items]
+        duplicate_product_ids = {
+            product_id
+            for product_id in product_ids
+            if product_ids.count(product_id) > 1
+        }
+
+        if duplicate_product_ids:
+            duplicate_ids = ", ".join(
+                str(product_id)
+                for product_id in sorted(duplicate_product_ids)
+            )
+
+            raise ReceiveIssueStockError(
+                "A dispatch cannot contain the same product more than once. "
+                f"Duplicate product ID(s): {duplicate_ids}."
+            )
+
+        if not payload.destination_vessel.strip():
+            raise ReceiveIssueStockError(
+                "Destination vessel is required."
+            )
+
+    def _get_staff_or_raise(self, staff_id: int):
+        staff = (
+            self.session.query(Staff)
+            .filter(Staff.id == staff_id)
+            .first()
+        )
+
+        if not staff:
+            raise ReceiveIssueStockError(
+                f"Staff with id {staff_id} does not exist."
+            )
+
+        return staff
+
+    @staticmethod
+    def _get_document_type(
+        payload: ReceiveIssueStockRequest,
+    ) -> DocumentType:
+        if isinstance(payload, ReceiveStockRequest):
+            return DocumentType.GOODS_RECEIVED
+
+        if isinstance(payload, DispatchStockRequest):
+            return DocumentType.DISPATCH
+
+        if isinstance(payload, IssueStockRequest):
+            return DocumentType.ISSUE_RECORDS
+
+        raise ReceiveIssueStockError(
+            "Unsupported stock document type."
+        )
+
+    @staticmethod
+    def _get_movement_type(
+        payload: ReceiveIssueStockRequest,
+    ) -> MovementType:
+        if isinstance(payload, ReceiveStockRequest):
+            return MovementType.RECIEVE
+
+        return MovementType.ISSUE
+
+    @staticmethod
+    def _get_quantity_sign(
+        payload: ReceiveIssueStockRequest,
+    ) -> Decimal:
+        if isinstance(payload, ReceiveStockRequest):
+            return Decimal("1")
+
+        return Decimal("-1")
+
+    @staticmethod
+    def _get_source_party(
+        payload: ReceiveIssueStockRequest,
+    ) -> str | None:
+        if isinstance(payload, ReceiveStockRequest):
+            return payload.source_party
+
+        return None
+
+    @staticmethod
+    def _get_destination_party(
+        payload: ReceiveIssueStockRequest,
+    ) -> str | None:
+        if isinstance(payload, IssueStockRequest):
+            return payload.dest_party
+
+        if isinstance(payload, DispatchStockRequest):
+            return payload.destination_vessel
+
+        return None
 
     def submit_stocktake(self, recorded_by:int, store_id: int, product_id: int, remarks: str, target_quantity: Decimal, target_unit_id: int | None = None, stocktake_date:date = date.today()) -> StockMovement:
         # this handles some scenarios as follows
