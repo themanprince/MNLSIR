@@ -4,7 +4,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
 from db import Base, engine, make_session
-from endpoints.admin_views import ProductAdmin, UnitAdmin, StoreAdmin, ProductUnitConversionAdmin, InventoryAdmin, StaffAdmin, StockMovementAdmin, GoodsReceivingAdmin, GoodsReceivedLedgerAdmin, DispatchAdmin, DispatchLedgerAdmin
+from endpoints.product_admin import ProductAdmin
+from endpoints.unit_admin import UnitAdmin
+from endpoints.store_admin import StoreAdmin
+from endpoints.product_unit_conversion_admin import ProductUnitConversionAdmin
+from endpoints.inventory_admin import InventoryAdmin
+from endpoints.staff_admin import StaffAdmin
+from endpoints.stock_movement_admin import StockMovementAdmin
+from endpoints.goods_receiving_admin import GoodsReceivingAdmin
+from endpoints.goods_received_ledger_admin import GoodsReceivedLedgerAdmin
+from endpoints.dispatch_admin import DispatchAdmin
+from endpoints.dispatch_ledger_admin import DispatchLedgerAdmin
 from auth import AuthAdmin, create_superuser_staff
 import os
 from dotenv import load_dotenv

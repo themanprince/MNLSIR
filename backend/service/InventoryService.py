@@ -16,7 +16,90 @@ class InventoryService:
         self.unit_service = UnitService(session=session)
         self.stock_service = StockService(session=session)
     
-    
+
+    def submit_stocktake(self, recorded_by:int, store_id: int, product_id: int, remarks: str, target_quantity: Decimal, target_unit_id: int | None = None, stocktake_date:date = date.today()) -> StockMovement:
+        # this handles some scenarios as follows
+        # 1. the scenario where store keeper needs to update digital stock balance of a product to align with its physical stock balance, in cases of observed but inexplainable discrepancies
+        # 2. fresh inventory taking
+
+        store = self.session.query(Store).filter(Store.id == store_id).first()
+        if not store:
+            raise SubmitStockTakeError(f"Store with id {store_id} does not exist")
+        
+        staff = self.session.query(Staff).filter(Staff.id == recorded_by).first()
+        if not staff:
+            raise SubmitStockTakeError(f"Staff with id {recorded_by} does not exist")
+        
+        product = self.session.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise SubmitStockTakeError(f"Product with id {product_id} does not exist")
+        
+        # If no unit is provided, preserve the existing behavior:
+        # target_quantity is assumed to already be in the base unit.
+        quantity_in_base_unit = target_quantity
+
+        if target_unit_id is not None:
+            try:
+                quantity_in_base_unit = self.unit_service.to_base(
+                product_id=product_id,
+                    quantity=target_quantity,
+                    from_unit_id=target_unit_id,
+            )
+            except Exception as error:
+                raise SubmitStockTakeError(str(error)) from error
+        
+        transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
+            self.session.begin_nested()
+            if self.session.in_transaction()
+            else self.session.begin()
+        )
+        with transaction_context:
+            lock_statement = ( #so nobody updates StockBalance while I'm still working with it
+                select(StockBalance)
+                .where(StockBalance.store_id == store_id, StockBalance.product_id == product_id)
+                .with_for_update()
+            )
+            self.session.execute(lock_statement)
+
+            current_balance_record = self.session.query(StockBalance).filter(StockBalance.store_id == store_id, StockBalance.product_id == product_id).first()
+            current_quantity = current_balance_record.quantity if current_balance_record else Decimal("0")
+
+            action_type = ActionType.INITIAL_STOCK_TAKE if current_balance_record is None else ActionType.BALANCE_OVERWRITE_RECONCILE
+
+            stock_movement = StockMovement(
+                recorded_by = recorded_by,
+                store_id = store_id,
+                product_id = product_id,
+                movement_type = MovementType.STOCKTAKE,
+                quantity_delta = Decimal("0"), # this is an adjustment stock movement.. the stock balance should be changed to the set target_quantity, and not be calculated based on some quantity_delta
+                target_quantity = quantity_in_base_unit,
+                remarks = remarks,
+                movement_date = stocktake_date #explicitly passed, as guard against delayed submissions
+            )
+
+            self.session.add(stock_movement)
+            self.session.flush()
+
+            #logging the action into out audit trail
+            intervention_log = InterventionLog(
+                recorded_by = recorded_by,
+                store_id = store_id,
+                product_id = product_id,
+                source_action_type = action_type,
+                concerned_movement_id = stock_movement.id,
+                old_value_snapshot = current_quantity,
+                new_value_snapshot = quantity_in_base_unit,
+                remarks = remarks
+            )
+
+            self.session.add(intervention_log)
+            self.session.flush()
+
+            self.stock_service.recalculate(store_id=store_id, product_id = product_id, from_movement_date = stocktake_date)
+
+            return stock_movement
+
+
     def receive_issue_stock(self, payload: ReceiveStockRequest | IssueStockRequest):
         #this method was initially retained for backwards compatibility with code already using it... asides that, it is redundant to have a method whose only code is calling another method... lol
         return self._record_stock_document(payload)
@@ -228,84 +311,4 @@ class InventoryService:
 
         return None
 
-    def submit_stocktake(self, recorded_by:int, store_id: int, product_id: int, remarks: str, target_quantity: Decimal, target_unit_id: int | None = None, stocktake_date:date = date.today()) -> StockMovement:
-        # this handles some scenarios as follows
-        # 1. the scenario where store keeper needs to update digital stock balance of a product to align with its physical stock balance, in cases of observed but inexplainable discrepancies
-        # 2. fresh inventory taking
-
-        store = self.session.query(Store).filter(Store.id == store_id).first()
-        if not store:
-            raise SubmitStockTakeError(f"Store with id {store_id} does not exist")
-        
-        staff = self.session.query(Staff).filter(Staff.id == recorded_by).first()
-        if not staff:
-            raise SubmitStockTakeError(f"Staff with id {recorded_by} does not exist")
-        
-        product = self.session.query(Product).filter(Product.id == product_id).first()
-        if not product:
-            raise SubmitStockTakeError(f"Product with id {product_id} does not exist")
-        
-        # If no unit is provided, preserve the existing behavior:
-        # target_quantity is assumed to already be in the base unit.
-        quantity_in_base_unit = target_quantity
-
-        if target_unit_id is not None:
-            try:
-                quantity_in_base_unit = self.unit_service.to_base(
-                product_id=product_id,
-                    quantity=target_quantity,
-                    from_unit_id=target_unit_id,
-            )
-            except Exception as error:
-                raise SubmitStockTakeError(str(error)) from error
-        
-        transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
-            self.session.begin_nested()
-            if self.session.in_transaction()
-            else self.session.begin()
-        )
-        with transaction_context:
-            lock_statement = ( #so nobody updates StockBalance while I'm still working with it
-                select(StockBalance)
-                .where(StockBalance.store_id == store_id, StockBalance.product_id == product_id)
-                .with_for_update()
-            )
-            self.session.execute(lock_statement)
-
-            current_balance_record = self.session.query(StockBalance).filter(StockBalance.store_id == store_id, StockBalance.product_id == product_id).first()
-            current_quantity = current_balance_record.quantity if current_balance_record else Decimal("0")
-
-            action_type = ActionType.INITIAL_STOCK_TAKE if current_balance_record is None else ActionType.BALANCE_OVERWRITE_RECONCILE
-
-            stock_movement = StockMovement(
-                recorded_by = recorded_by,
-                store_id = store_id,
-                product_id = product_id,
-                movement_type = MovementType.STOCKTAKE,
-                quantity_delta = Decimal("0"), # this is an adjustment stock movement.. the stock balance should be changed to the set target_quantity, and not be calculated based on some quantity_delta
-                target_quantity = quantity_in_base_unit,
-                remarks = remarks,
-                movement_date = stocktake_date #explicitly passed, as guard against delayed submissions
-            )
-
-            self.session.add(stock_movement)
-            self.session.flush()
-
-            #logging the action into out audit trail
-            intervention_log = InterventionLog(
-                recorded_by = recorded_by,
-                store_id = store_id,
-                product_id = product_id,
-                source_action_type = action_type,
-                concerned_movement_id = stock_movement.id,
-                old_value_snapshot = current_quantity,
-                new_value_snapshot = quantity_in_base_unit,
-                remarks = remarks
-            )
-
-            self.session.add(intervention_log)
-            self.session.flush()
-
-            self.stock_service.recalculate(store_id=store_id, product_id = product_id, from_movement_date = stocktake_date)
-
-            return stock_movement
+    
