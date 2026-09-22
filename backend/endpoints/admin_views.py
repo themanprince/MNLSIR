@@ -9,17 +9,16 @@ from wtforms.validators import Regexp
 from datetime import date
 from decimal import Decimal, InvalidOperation
 import logging
-from db import Unit, Product, Store, ProductUnitConversion, Staff, StockMovement
+from db import Unit, Product, Store, ProductUnitConversion, Staff, StockMovement, DocumentType
 from db import make_session
 from auth import is_logged_in, is_admin, get_password_hash, decode_access_token
 from repo.StoreRepo import StoreRepo
 from repo.ProductRepo import ProductRepo
-from repo.GoodsReceivedRepo import GoodsReceivedRepo
 from service.LedgerService import LedgerService, SortOrder
 from service.InventoryService import InventoryService
-from schema.ReceiveIssueItem import ReceiveIssueItem
 from schema.ReceiveIssueStockRequest import ReceiveStockRequest, DispatchStockRequest
 from endpoints.helpers.stock_transaction_form import StockTransactionForm
+from endpoints.helpers.stock_document_ledger import StockDocumentLedgerAdmin
 from exceptions import ReceiveIssueStockError
 
 
@@ -404,108 +403,32 @@ class GoodsReceivingAdmin(BaseView):
             session.close()
 
 
-class GoodsReceivedLedgerAdmin(BaseView):
+class GoodsReceivedLedgerAdmin(
+    StockDocumentLedgerAdmin
+):
     name = "Goods Received Ledger"
 
-    def is_accessible(self, request: Request) -> bool:
-        return is_logged_in(request)
+    document_type = DocumentType.GOODS_RECEIVED
+    page_title = "Goods Received Ledger"
+    page_description = (
+        "View products received into a store."
+    )
+    party_label = "Source"
+    party_attribute = "source_party"
+    empty_message = (
+        "No goods received have been recorded "
+        "for this store."
+    )
 
-    def is_visible(self, request: Request) -> bool:
-        return is_logged_in(request)
-
-    async def _render(
+    @expose(
+        "/goods-received-ledger",
+        methods=["GET"],
+    )
+    async def goods_received_ledger(
         self,
         request: Request,
-        *,
-        stores,
-        selected_store=None,
-        documents=None,
-        message=None,
-        message_type="info",
     ):
-        return await self.templates.TemplateResponse(
-            request,
-            "goods_received_ledger.html",
-            {
-                "request": request,
-                "stores": stores,
-                "selected_store": selected_store,
-                "documents": documents or [],
-                "message": message,
-                "message_type": message_type,
-            },
-        )
-
-    @expose("/goods-received-ledger", methods=["GET"])
-    async def goods_received_ledger(self, request: Request):
-        session = make_session()
-
-        try:
-            stores = (
-                session.query(Store)
-                .order_by(Store.name.asc())
-                .all()
-            )
-
-            store_id_value = request.query_params.get("store_id")
-
-            if not store_id_value:
-                return await self._render(
-                    request,
-                    stores=stores,
-                )
-
-            try:
-                store_id = int(store_id_value)
-            except (TypeError, ValueError):
-                return await self._render(
-                    request,
-                    stores=stores,
-                    message="The selected store is invalid.",
-                    message_type="danger",
-                )
-
-            selected_store = (
-                session.query(Store)
-                .filter(Store.id == store_id)
-                .first()
-            )
-
-            if not selected_store:
-                return await self._render(
-                    request,
-                    stores=stores,
-                    message="The selected store does not exist.",
-                    message_type="danger",
-                )
-
-            documents = GoodsReceivedRepo.get_for_store(
-                session=session,
-                store_id=store_id,
-            )
-
-            return await self._render(
-                request,
-                stores=stores,
-                selected_store=selected_store,
-                documents=documents,
-            )
-
-        except Exception:
-            session.rollback()
-
-            return await self._render(
-                request,
-                stores=[],
-                message=(
-                    "The goods received ledger could not be loaded. "
-                    "Please try again."
-                ),
-                message_type="danger",
-            )
-
-        finally:
-            session.close()
+        return await self._display_ledger(request)
 
 
 class DispatchAdmin(BaseView):
@@ -662,3 +585,30 @@ class DispatchAdmin(BaseView):
         finally:
             session.close()
 
+
+class DispatchLedgerAdmin(
+    StockDocumentLedgerAdmin
+):
+    name = "Dispatch Ledger"
+
+    document_type = DocumentType.DISPATCH
+    page_title = "Dispatch Ledger"
+    page_description = (
+        "View products dispatched from a store."
+    )
+    party_label = "Destination Vessel"
+    party_attribute = "destination_party"
+    empty_message = (
+        "No dispatches have been recorded "
+        "for this store."
+    )
+
+    @expose(
+        "/dispatch-ledger",
+        methods=["GET"],
+    )
+    async def dispatch_ledger(
+        self,
+        request: Request,
+    ):
+        return await self._display_ledger(request)
