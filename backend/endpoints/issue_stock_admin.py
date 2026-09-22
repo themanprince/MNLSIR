@@ -4,43 +4,45 @@ from starlette.requests import Request
 from endpoints.helpers.stock_transaction_admin import (
     StockTransactionAdmin,
 )
-from schema.ReceiveIssueStockRequest import ReceiveStockRequest
+from schema.ReceiveIssueStockRequest import IssueStockRequest
 from service.InventoryService import InventoryService
 
 
-class GoodsReceivingAdmin(StockTransactionAdmin):
-    name = "Receive Goods"
+class IssueStockAdmin(StockTransactionAdmin):
+    name = "Issue Stock"
 
-    template_name = "goods_receiving.html"
-    transaction_name = "Goods receiving transaction"
+    template_name = "issue_stock.html"
+    transaction_name = "Issue record"
 
     @expose(
-        "/goods-receiving",
+        "/issue-stock",
         methods=["GET", "POST"],
     )
-    async def goods_receiving(self, request: Request):
+    async def issue_stock(self, request: Request):
         return await self.handle_transaction(request)
 
     def _record(self, request, session, form):
-        receiving_date = self.parse_date(
+        issue_date = self.parse_date(
             form.get("date"),
-            "Receiving date",
+            "Issue date",
         )
 
-        source_party = str(
-            form.get("source_party") or ""
+        destination_party = str(
+            form.get("dest_party") or ""
         ).strip()
 
-        if not source_party:
-            raise ValueError("Source party is required.")
+        if not destination_party:
+            raise ValueError(
+                "Destination party is required."
+            )
 
-        payload = ReceiveStockRequest(
+        payload = IssueStockRequest(
             store_id=self.parse_positive_int(
                 form.get("store_id"),
                 "Store",
             ),
-            date=receiving_date,
-            source_party=source_party,
+            date=issue_date,
+            dest_party=destination_party,
             remarks=str(
                 form.get("remarks") or ""
             ).strip(),

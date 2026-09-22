@@ -13,6 +13,7 @@ from endpoints.staff_admin import StaffAdmin
 from endpoints.stock_movement_admin import StockMovementAdmin
 from endpoints.goods_receiving_admin import GoodsReceivingAdmin
 from endpoints.goods_received_ledger_admin import GoodsReceivedLedgerAdmin
+from endpoints.issue_stock_admin import IssueStockAdmin
 from endpoints.dispatch_admin import DispatchAdmin
 from endpoints.dispatch_ledger_admin import DispatchLedgerAdmin
 from auth import AuthAdmin, create_superuser_staff
@@ -56,11 +57,13 @@ admin.add_view(ProductAdmin)
 admin.add_view(ProductUnitConversionAdmin)
 admin.add_view(InventoryAdmin)
 admin.add_view(StaffAdmin)
-admin.add_view(StockMovementAdmin)
 admin.add_view(GoodsReceivingAdmin)
 admin.add_view(GoodsReceivedLedgerAdmin)
+admin.add_view(IssueStockAdmin)
 admin.add_view(DispatchAdmin)
 admin.add_view(DispatchLedgerAdmin)
+admin.add_view(StockMovementAdmin)
+
 
 if __name__ == "__main__":
 	import uvicorn

@@ -1,0 +1,276 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Issue Stock</h2>
+
+            <p class="text-muted mb-0">
+                Record products issued from a store to a destination party.
+            </p>
+        </div>
+    </div>
+
+    {% if message %}
+        <div
+            class="alert alert-{{ message_type or 'info' }} alert-dismissible fade show"
+            role="alert"
+        >
+            {{ message }}
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+            ></button>
+        </div>
+    {% endif %}
+
+    {% if not stores %}
+        <div class="alert alert-warning">
+            No stores are available. Create a store before issuing stock.
+        </div>
+    {% endif %}
+
+    {% if not products %}
+        <div class="alert alert-warning">
+            No products are available. Create a product before issuing stock.
+        </div>
+    {% endif %}
+
+    <form
+        method="post"
+        action="/admin/issue-stock"
+        id="issue-stock-form"
+    >
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>Issue Details</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label
+                            for="store_id"
+                            class="form-label"
+                        >
+                            Store
+                        </label>
+
+                        <select
+                            class="form-select"
+                            id="store_id"
+                            name="store_id"
+                            required
+                        >
+                            <option value="">
+                                Select a store
+                            </option>
+
+                            {% for store in stores %}
+                                <option
+                                    value="{{ store.id }}"
+                                    {% if form_data.store_id|string
+                                        == store.id|string %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ store.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label
+                            for="date"
+                            class="form-label"
+                        >
+                            Issue Date
+                        </label>
+
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="date"
+                            name="date"
+                            value="{{ form_data.date or today }}"
+                            max="{{ today }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="col-md-4">
+                        <label
+                            for="dest_party"
+                            class="form-label"
+                        >
+                            Destination Party
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="dest_party"
+                            name="dest_party"
+                            value="{{ form_data.dest_party or '' }}"
+                            maxlength="255"
+                            required
+                        >
+                    </div>
+
+                    <div class="col-12">
+                        <label
+                            for="remarks"
+                            class="form-label"
+                        >
+                            Remarks
+                        </label>
+
+                        <textarea
+                            class="form-control"
+                            id="remarks"
+                            name="remarks"
+                            rows="2"
+                            maxlength="2000"
+                        >{{ form_data.remarks or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div
+                class="card-header d-flex justify-content-between align-items-center"
+            >
+                <strong>Issued Items</strong>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    id="add-item-button"
+                >
+                    Add Item
+                </button>
+            </div>
+
+            <div class="card-body">
+                <div id="items-container"></div>
+
+                <div
+                    id="empty-items-message"
+                    class="alert alert-secondary mb-0"
+                >
+                    Add at least one product.
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button
+                type="reset"
+                class="btn btn-outline-secondary"
+                id="reset-form-button"
+            >
+                Clear
+            </button>
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+                {% if not stores or not products %}
+                    disabled
+                {% endif %}
+            >
+                Record Stock Issue
+            </button>
+        </div>
+    </form>
+</div>
+
+<template id="item-row-template">
+    <div class="issued-item-row border rounded p-3 mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">
+                    Product
+                </label>
+
+                <select
+                    class="form-select product-select"
+                    name="product_id"
+                    required
+                >
+                    <option value="">
+                        Select a product
+                    </option>
+
+                    {% for product in products %}
+                        <option value="{{ product.id }}">
+                            {{ product.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">
+                    Unit
+                </label>
+
+                <select
+                    class="form-select unit-select"
+                    name="unit_id"
+                    required
+                    disabled
+                >
+                    <option value="">
+                        Select a product first
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">
+                    Quantity
+                </label>
+
+                <input
+                    type="number"
+                    class="form-control quantity-input"
+                    name="quantity"
+                    min="0.0001"
+                    step="0.0001"
+                    inputmode="decimal"
+                    required
+                >
+            </div>
+
+            <div class="col-md-2">
+                <button
+                    type="button"
+                    class="btn btn-outline-danger remove-item-button w-100"
+                >
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script src="{{ url_for('static', path='js/stock-item-form.js') }}"></script>
+
+<script>
+    new StockItemForm({
+        productUnits: {{ product_units | tojson }},
+        itemsContainerId: "items-container",
+        itemTemplateId: "item-row-template",
+        addItemButtonId: "add-item-button",
+        emptyItemsMessageId: "empty-items-message",
+        resetFormButtonId: "reset-form-button"
+    });
+</script>
+{% endblock %}
