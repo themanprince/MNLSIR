@@ -42,7 +42,12 @@ secret_key = os.getenv("SECRET_KEY2", "")
 authentication_backend = AuthAdmin(secret_key = secret_key)
 
 app = FastAPI(lifespan = lifespan)
-admin = Admin(app, engine=engine, authentication_backend=authentication_backend)
+admin = Admin(
+    app,
+    engine=engine,
+    authentication_backend=authentication_backend,
+    templates_dir="templates",
+)
 
 
 @app.get("/", include_in_schema=False)

@@ -1,0 +1,305 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<style>
+    .mnlsir-home {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 1rem 0 2rem;
+    }
+
+    .mnlsir-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1rem;
+        padding: 3rem 2.5rem;
+        color: #fff;
+        background:
+            linear-gradient(
+                120deg,
+                rgba(13, 71, 161, 0.98),
+                rgba(25, 135, 84, 0.94)
+            );
+        box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+    }
+
+    .mnlsir-hero::after {
+        content: "";
+        position: absolute;
+        width: 280px;
+        height: 280px;
+        right: -100px;
+        top: -120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .mnlsir-brand {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .mnlsir-logo {
+        width: 76px;
+        height: 76px;
+        object-fit: contain;
+        border-radius: 1rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.95);
+    }
+
+    .mnlsir-title {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+    }
+
+    .mnlsir-subtitle {
+        margin: 0.35rem 0 0;
+        font-size: clamp(0.9rem, 2vw, 1.2rem);
+        opacity: 0.92;
+    }
+
+    .mnlsir-description {
+        position: relative;
+        z-index: 1;
+        max-width: 720px;
+        margin: 2rem 0 0;
+        font-size: 1.05rem;
+        line-height: 1.7;
+    }
+
+    .mnlsir-section-title {
+        margin: 2rem 0 1rem;
+        font-weight: 700;
+    }
+
+    .mnlsir-card {
+        height: 100%;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.85rem;
+        transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease;
+    }
+
+    .mnlsir-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.6rem 1.5rem rgba(0, 0, 0, 0.1);
+    }
+
+    .mnlsir-card-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        margin-bottom: 0.85rem;
+        border-radius: 0.7rem;
+        color: #fff;
+        background: #0d6efd;
+        font-weight: 700;
+    }
+
+    .mnlsir-card h5 {
+        margin-bottom: 0.5rem;
+    }
+
+    .mnlsir-card p {
+        min-height: 3.2rem;
+        color: #6c757d;
+    }
+
+    .mnlsir-footer {
+        margin-top: 2.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="mnlsir-home">
+    <section class="mnlsir-hero">
+        <div class="mnlsir-brand">
+            <!-- TODO: Replace this placeholder path with the final logo path. -->
+            <img
+                src="/static/image/mazuka-logo.png"
+                alt="MNLSIR logo"
+                class="mnlsir-logo"
+            >
+
+            <div>
+                <h1 class="mnlsir-title">MNLSIR</h1>
+                <p class="mnlsir-subtitle">
+                    Mazuka Nigeria Ltd. System of Integrated Records
+                </p>
+            </div>
+        </div>
+
+        <p class="mnlsir-description">
+            A central workspace for recording, monitoring, and reviewing
+            inventory operations across Mazuka Nigeria Ltd.
+        </p>
+
+        <div class="mt-4 position-relative" style="z-index: 1;">
+            <a href="/admin/inventory" class="btn btn-light me-2">
+                View inventory
+            </a>
+            <a href="/admin/goods-receiving" class="btn btn-outline-light">
+                Record received goods
+            </a>
+        </div>
+    </section>
+
+    <h2 class="mnlsir-section-title">Operations</h2>
+
+    <div class="row g-4">
+        <div class="col-md-6 col-xl-4">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <span class="mnlsir-card-icon">I</span>
+                    <h5>Inventory</h5>
+                    <p>
+                        View store balances and record physical stocktakes.
+                    </p>
+                    <a href="/admin/inventory" class="btn btn-primary">
+                        Open inventory
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <span class="mnlsir-card-icon">R</span>
+                    <h5>Goods receiving</h5>
+                    <p>
+                        Record products received into a selected store.
+                    </p>
+                    <a href="/admin/goods-receiving" class="btn btn-success">
+                        Receive goods
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <span class="mnlsir-card-icon">I</span>
+                    <h5>Issue stock</h5>
+                    <p>
+                        Record stock issued to a department, person, or party.
+                    </p>
+                    <a href="/admin/issue-stock" class="btn btn-warning">
+                        Issue stock
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <span class="mnlsir-card-icon">D</span>
+                    <h5>Dispatch</h5>
+                    <p>
+                        Record stock dispatched to a vessel or destination.
+                    </p>
+                    <a href="/admin/dispatch" class="btn btn-info">
+                        Dispatch stock
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <span class="mnlsir-card-icon">L</span>
+                    <h5>Goods received ledger</h5>
+                    <p>
+                        Review previous goods-receiving documents by store.
+                    </p>
+                    <a
+                        href="/admin/goods-received-ledger"
+                        class="btn btn-outline-success"
+                    >
+                        Open ledger
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <span class="mnlsir-card-icon">S</span>
+                    <h5>Stock movement review</h5>
+                    <p>
+                        Review, correct, and reconcile historical movements.
+                    </p>
+                    <a
+                        href="/admin/stock-movement-review"
+                        class="btn btn-outline-primary"
+                    >
+                        Review movements
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mnlsir-section-title">Administration</h2>
+
+    <div class="row g-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <h5>Stores</h5>
+                    <p>Manage stores used by the inventory system.</p>
+                    <a href="/admin/store/list" class="btn btn-outline-secondary">
+                        Manage stores
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <h5>Products</h5>
+                    <p>Manage products and their base units.</p>
+                    <a href="/admin/product/list" class="btn btn-outline-secondary">
+                        Manage products
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card mnlsir-card">
+                <div class="card-body">
+                    <h5>Units</h5>
+                    <p>Manage measurement units and conversions.</p>
+                    <a href="/admin/unit/list" class="btn btn-outline-secondary">
+                        Manage units
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+
+    <div class="mnlsir-footer">
+        MNLSIR · Mazuka Nigeria Ltd. System of Integrated Records
+    </div>
+</div>
+{% endblock %}
