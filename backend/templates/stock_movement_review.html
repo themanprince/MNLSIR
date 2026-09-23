@@ -91,7 +91,8 @@
                                 <td>{{ movement.source_party or "-" }}</td>
                                 <td>{{ movement.destination_party or "-" }}</td>
                                 <td>{{ movement.running_balance or "-" }}</td>
-                                <td>{{ movement.recorded_by }}</td>
+                                <td>{{ movement.recorder.first_name }} {{ movement.recorder.last_name }}
+</td>
                                 <td>{{ movement.remarks or "-" }}</td>
                                 <td>
                                     <div class="d-flex flex-column gap-2">

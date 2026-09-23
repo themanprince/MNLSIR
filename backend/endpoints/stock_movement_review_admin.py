@@ -80,7 +80,7 @@ class StockMovementReviewAdmin(BaseView):
                             store_id=selected_store_id,
                             product_id=selected_product_id,
                             limit=200,
-                            newest_first=True,
+                            newest_first=False,
                         )
 
                         stocktakes = (
@@ -129,7 +129,7 @@ class StockMovementReviewAdmin(BaseView):
 
             elif request.method == "POST":
                 form = await request.form()
-                action = form.get("action")
+                action = str(form.get("action") or "").strip()
 
                 token = request.session.get("token")
                 payload = decode_access_token(token)
@@ -150,19 +150,25 @@ class StockMovementReviewAdmin(BaseView):
 
                 stock_service = StockService(session=session)
 
-                store_id:int = Form(...)
-                product_id:int = Form(...)
+                store_id:int = int(form.get("store_id"))
+                product_id:int = int(form.get("product_id"))
 
                 if action == "edit_movement":
-                    movement_id:int = Form(...)
-                    quantity_delta = form.get("quantity_delta")
+                    movement_id = self._parse_required_int(
+                    form.get("movement_id"),
+                    "Movement",
+                )
+                    quantity_delta = self._parse_quantity_delta(
+                    form.get("quantity_delta")
+                )
 
                     try:
                         quantity_delta = Decimal(str(quantity_delta))
                     except (InvalidOperation, TypeError, ValueError):
                         raise ValueError("Quantity delta must be a valid number.")
 
-                    remarks:str = Form(...) or "Historical stock movement corrected from admin view"
+                    remarks = (
+                    str(form.get("remarks") or "").strip() or "Historical stock movement corrected from admin view"
 
                     await run_in_threadpool(
                         stock_service.update_historical_stockmovement,
@@ -181,8 +187,14 @@ class StockMovementReviewAdmin(BaseView):
                     )
 
                 elif action == "link_stocktake":
-                    movement_id:int = Form(...)
-                    stocktake_id:int = Form(...)
+                    movement_id = self._parse_required_int(
+                    form.get("movement_id"),
+                    "Movement",
+                )
+                    stocktake_id = self._parse_required_int(
+                    form.get("stocktake_id"),
+                    "Stocktake",
+                )
 
                     await run_in_threadpool(
                         stock_service.associate_stock_movement_to_stocktake,
@@ -200,7 +212,10 @@ class StockMovementReviewAdmin(BaseView):
                     )
 
                 elif action == "unlink_stocktake":
-                    movement_id:int = Form(...)
+                    movement_id = self._parse_required_int(
+                    form.get("movement_id"),
+                    "Movement",
+                )
 
                     await run_in_threadpool(
                         stock_service.remove_association_from_stock_movement,
