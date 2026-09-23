@@ -23,10 +23,10 @@ class InventoryAdmin(BaseView):
         return is_logged_in(request)
 
     @expose("/inventory", methods=["GET", "POST"])
-    async def get_inventory_view(self, request):
+    async def inventory(self, request):
         session = make_session()
 
-        async def return_template_with_info(message, products, stores, product_units):
+        async def render(message, products, stores, product_units):
             return await self.templates.TemplateResponse(request, "inventory.html", {"message": message, "products": products, "stores": stores, "product_units": product_units})
 
         try:
@@ -84,12 +84,12 @@ class InventoryAdmin(BaseView):
                 token = request.session.get("token")
                 payload = decode_access_token(token)
                 if not payload:
-                    return await return_template_with_info(message="Unable to access required info from user's auth token. Contact Admin", products=products, stores=stores, product_units=product_units)
+                    return await render(message="Unable to access required info from user's auth token. Contact Admin", products=products, stores=stores, product_units=product_units)
 
                 staff_id = payload.get("staff_id")
 
                 if not staff_id:
-                    return await return_template_with_info(message="Unable to access staff_id from user's auth token. Contact Admin", products=products, stores=stores, product_units=product_units)
+                    return await render(message="Unable to access staff_id from user's auth token. Contact Admin", products=products, stores=stores, product_units=product_units)
 
                 form = await request.form()
                 store_id = int(form.get("store_id"))
@@ -115,10 +115,10 @@ class InventoryAdmin(BaseView):
                     remarks = remarks
                 )
 
-                return await return_template_with_info(message="Inventory Taking Successful", products=products, stores=stores, product_units=product_units)
+                return await render(message="Inventory Taking Successful", products=products, stores=stores, product_units=product_units)
 
         except Exception as err:
-            return await return_template_with_info(message=str(err), stores=[], products=[], product_units=[])
+            return await render(message=str(err), stores=[], products=[], product_units=[])
 
         finally:
             session.close()
