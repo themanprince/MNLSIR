@@ -1,0 +1,212 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+
+    {% if message %}
+        <div class="alert alert-primary alert-dismissible fade show" role="alert">
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <strong class="h3">{{ message }}</strong>
+        </div>
+    {% endif %}
+
+    <div class="card border-primary container-fluid mb-4">
+        <div class="card-body d-flex flex-row justify-content-between align-items-center">
+            <h3>Stock Movement Review</h3>
+        </div>
+    </div>
+
+    <form method="GET" action="/admin/stock-movement-review" class="mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label for="store_id" class="form-label">Select Store</label>
+                <select class="form-select" name="store_id" id="store_id" required>
+                    {% for store in stores %}
+                        <option value="{{ store.store_id }}"
+                            {% if selected_store_id and selected_store_id == store.store_id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ store.store_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-5">
+                <label for="product_id" class="form-label">Select Product</label>
+                <select class="form-select" name="product_id" id="product_id" required>
+                    {% for product in products %}
+                        <option value="{{ product.id }}"
+                            {% if selected_product_id and selected_product_id == product.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ product.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Load</button>
+            </div>
+        </div>
+    </form>
+
+    {% if selected_store_id and selected_product_id %}
+        <div class="card border-info mb-4">
+            <div class="card-body">
+                <h5>Product Summary</h5>
+                {% if stock_balance %}
+                    <p class="mb-1">
+                        Current stock balance: <strong>{{ stock_balance.quantity }}</strong>
+                    </p>
+                {% else %}
+                    <p class="text-warning mb-0">No stock balance cached for this product in this store yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if movements %}
+            <div class="table-responsive mb-5">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Delta</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Running Balance</th>
+                            <th>Recorded By</th>
+                            <th>Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in movements %}
+                            <tr>
+                                <td>{{ movement.movement_date }}</td>
+                                <td>{{ movement.movement_type }}</td>
+                                <td>{{ movement.quantity_delta }}</td>
+                                <td>{{ movement.source_party or "-" }}</td>
+                                <td>{{ movement.destination_party or "-" }}</td>
+                                <td>{{ movement.running_balance or "-" }}</td>
+                                <td>{{ movement.recorded_by }}</td>
+                                <td>{{ movement.remarks or "-" }}</td>
+                                <td>
+                                    <div class="d-flex flex-column gap-2">
+                                        <form method="POST" action="/admin/stock-movement-review">
+                                            <input type="hidden" name="action" value="edit_movement">
+                                            <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+                                            <input type="hidden" name="product_id" value="{{ selected_product_id }}">
+                                            <input type="hidden" name="movement_id" value="{{ movement.id }}">
+
+                                            <div class="mb-2">
+                                                <label class="form-label small">New delta</label>
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm"
+                                                    name="quantity_delta"
+                                                    step="0.0001"
+                                                    value="{{ movement.quantity_delta }}"
+                                                    required
+                                                >
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label small">Remarks</label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="remarks"
+                                                    value="{{ movement.remarks or '' }}"
+                                                >
+                                            </div>
+
+                                            <button type="submit" class="btn btn-warning btn-sm w-100">
+                                                Correct movement
+                                            </button>
+                                        </form>
+
+                                        {% if stocktakes %}
+                                            <form method="POST" action="/admin/stock-movement-review" class="mt-2">
+                                                <input type="hidden" name="action" value="link_stocktake">
+                                                <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+                                                <input type="hidden" name="product_id" value="{{ selected_product_id }}">
+                                                <input type="hidden" name="movement_id" value="{{ movement.id }}">
+
+                                                <label class="form-label small">Link to stocktake</label>
+                                                <select class="form-select form-select-sm" name="stocktake_id" required>
+                                                    <option value="">Select a stocktake</option>
+                                                    {% for stocktake in stocktakes %}
+                                                        <option value="{{ stocktake.id }}">
+                                                            {{ stocktake.movement_date }} - {{ stocktake.target_quantity or "stocktake" }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+
+                                                <button type="submit" class="btn btn-info btn-sm mt-2 w-100">
+                                                    Link to stocktake
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if movement.associated_stockmovement_id %}
+                                            <form method="POST" action="/admin/stock-movement-review" class="mt-2">
+                                                <input type="hidden" name="action" value="unlink_stocktake">
+                                                <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+                                                <input type="hidden" name="product_id" value="{{ selected_product_id }}">
+                                                <input type="hidden" name="movement_id" value="{{ movement.id }}">
+
+                                                <button type="submit" class="btn btn-secondary btn-sm w-100">
+                                                    Remove stocktake link
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-primary" role="alert">
+                No stock movements found for this store/product.
+            </div>
+        {% endif %}
+
+        {% if stocktakes %}
+            <div class="card border-warning">
+                <div class="card-header">
+                    <h5 class="mb-0">Stocktakes for this product/store</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Target Quantity</th>
+                                    <th>Remarks</th>
+                                    <th>Associated Movement</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stocktake in stocktakes %}
+                                    <tr>
+                                        <td>{{ stocktake.movement_date }}</td>
+                                        <td>{{ stocktake.target_quantity or "-" }}</td>
+                                        <td>{{ stocktake.remarks or "-" }}</td>
+                                        <td>{{ stocktake.associated_stockmovement_id or "-" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+
+{% endblock %}

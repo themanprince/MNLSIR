@@ -10,7 +10,7 @@ from endpoints.store_admin import StoreAdmin
 from endpoints.product_unit_conversion_admin import ProductUnitConversionAdmin
 from endpoints.inventory_admin import InventoryAdmin
 from endpoints.staff_admin import StaffAdmin
-from endpoints.stock_movement_admin import StockMovementAdmin
+from endpoints.stock_movement_review_admin import StockMovementReviewAdmin
 from endpoints.goods_receiving_admin import GoodsReceivingAdmin
 from endpoints.goods_received_ledger_admin import GoodsReceivedLedgerAdmin
 from endpoints.issue_stock_admin import IssueStockAdmin
@@ -62,7 +62,7 @@ admin.add_view(GoodsReceivedLedgerAdmin)
 admin.add_view(IssueStockAdmin)
 admin.add_view(DispatchAdmin)
 admin.add_view(DispatchLedgerAdmin)
-admin.add_view(StockMovementAdmin)
+admin.add_view(StockMovementReviewAdmin)
 
 
 if __name__ == "__main__":
