@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from sqladmin import Admin
 from db import Base, engine, make_session
 from endpoints.product_admin import ProductAdmin
@@ -40,6 +41,12 @@ authentication_backend = AuthAdmin(secret_key = secret_key)
 
 app = FastAPI(lifespan = lifespan)
 admin = Admin(app, engine=engine, authentication_backend=authentication_backend)
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/admin/") #since all the functionality is in admin anyways
+
 
 app.add_middleware(
       CORSMiddleware,
