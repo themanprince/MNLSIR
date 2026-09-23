@@ -1,3 +1,8 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,10 +24,7 @@ from endpoints.dispatch_admin import DispatchAdmin
 from endpoints.dispatch_ledger_admin import DispatchLedgerAdmin
 from auth import AuthAdmin, create_superuser_staff
 import os
-from dotenv import load_dotenv
 
-
-load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
