@@ -154,13 +154,8 @@ class StockMovementReviewAdmin(BaseView):
                 product_id:int = int(form.get("product_id"))
 
                 if action == "edit_movement":
-                    movement_id = self._parse_required_int(
-                    form.get("movement_id"),
-                    "Movement",
-                )
-                    quantity_delta = self._parse_quantity_delta(
-                    form.get("quantity_delta")
-                )
+                    movement_id = int(form.get("movement_id"))
+                    quantity_delta = str(form.get("quantity_delta"))
 
                     try:
                         quantity_delta = Decimal(str(quantity_delta))
@@ -186,14 +181,8 @@ class StockMovementReviewAdmin(BaseView):
                     )
 
                 elif action == "link_stocktake":
-                    movement_id = self._parse_required_int(
-                    form.get("movement_id"),
-                    "Movement",
-                )
-                    stocktake_id = self._parse_required_int(
-                    form.get("stocktake_id"),
-                    "Stocktake",
-                )
+                    movement_id = int(form.get("movement_id"))
+                    stocktake_id = int(form.get("stocktake_id"))
 
                     await run_in_threadpool(
                         stock_service.associate_stock_movement_to_stocktake,
@@ -211,10 +200,7 @@ class StockMovementReviewAdmin(BaseView):
                     )
 
                 elif action == "unlink_stocktake":
-                    movement_id = self._parse_required_int(
-                    form.get("movement_id"),
-                    "Movement",
-                )
+                    movement_id = int(form.get("movement_id"))
 
                     await run_in_threadpool(
                         stock_service.remove_association_from_stock_movement,
