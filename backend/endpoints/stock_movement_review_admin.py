@@ -167,8 +167,7 @@ class StockMovementReviewAdmin(BaseView):
                     except (InvalidOperation, TypeError, ValueError):
                         raise ValueError("Quantity delta must be a valid number.")
 
-                    remarks = (
-                    str(form.get("remarks") or "").strip() or "Historical stock movement corrected from admin view"
+                    remarks = (str(form.get("remarks") or "").strip() or "Historical stock movement corrected from admin view")
 
                     await run_in_threadpool(
                         stock_service.update_historical_stockmovement,
