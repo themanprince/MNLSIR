@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from db import StockMovement, StockBalance, MovementType, InterventionLog, ActionType
+from db import StockMovement, StockBalance, MovementType, InterventionLog, ActionType, DocumentLine, ProductUnitConversion
 from datetime import date
 from decimal import Decimal
 from exceptions import UpdateStockMovementError, AssociateStockMovementError
@@ -99,7 +99,7 @@ class StockService:
 
     def update_historical_stockmovement(self, movement_id:int, new_quantity_delta:Decimal, recorded_by: int, remarks: str):
         # this allows store keepers to update a previously recorded stock movement..
-        # the rurnning balances of stock movements following that one will be recalculated
+        # the running balances of stock movements following that one will be recalculated
         transaction_context = ( # if a transaction is already started, use a nested savepoint transaction. Otherwise, start a top-level transaction
             self.session.begin_nested()
             if self.session.in_transaction()
@@ -117,10 +117,69 @@ class StockService:
             if not stock_movement:
                 raise UpdateStockMovementError("Target stock movement record not found")
             
+            if stock_movement.movement_type == MovementType.STOCKTAKE:
+                raise UpdateStockMovementError(
+                    "Stocktake movements cannot be edited."
+            )
+            
+            if stock_movement.movement_type == MovementType.RECIEVE:
+                if new_quantity_delta <= 0:
+                    raise UpdateStockMovementError(
+                    "A receive movement must have a positive quantity."
+                )
+
+            elif stock_movement.movement_type == MovementType.ISSUE:
+                if new_quantity_delta >= 0:
+                    raise UpdateStockMovementError(
+                    "An issue movement must have a negative quantity."
+                )
+            
             old_quantity_delta = stock_movement.quantity_delta
 
             stock_movement.quantity_delta = new_quantity_delta
+            
+            # Keep the source document line synchronized with the movement.
+            #
+            # The ledger displays DocumentLine.entered_quantity, while stock
+            # balances use StockMovement.quantity_delta.
+            if stock_movement.document_line_id:
+                document_line = (
+                    self.session.query(DocumentLine)
+                    .filter(DocumentLine.id == stock_movement.document_line_id)
+                    .with_for_update()
+                    .first()
+                )
 
+                if document_line:
+                    absolute_base_quantity = abs(new_quantity_delta)
+
+                    if document_line.entered_unit_id == document_line.product.base_unit_id:
+                        conversion_multiplier = Decimal("1")
+                    else:
+                        conversion = (
+                            self.session.query(ProductUnitConversion)
+                            .filter(
+                                ProductUnitConversion.product_id
+                                == document_line.product_id,
+                                ProductUnitConversion.unit_id
+                                == document_line.entered_unit_id,
+                            )
+                            .first()
+                        )
+
+                        if not conversion:
+                            raise UpdateStockMovementError(
+                            "Unable to determine the unit conversion for "
+                            "the linked document line."
+                        )
+
+                        conversion_multiplier = conversion.multiplier_to_base
+
+                        document_line.base_quantity = absolute_base_quantity
+                        document_line.entered_quantity = (
+                        absolute_base_quantity / conversion_multiplier
+                        )
+            
             intervention_log = InterventionLog(
                 recorded_by = recorded_by,
                 store_id = stock_movement.store_id,
