@@ -1,7 +1,7 @@
 python-multipart
 fastapi[all]
 pydantic
-sqlalchemy
+sqlalchemy[asyncio]
 python-dotenv
 sqladmin[full]
 jinja2
