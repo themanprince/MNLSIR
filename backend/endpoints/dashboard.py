@@ -1,7 +1,6 @@
 from sqladmin import BaseView, expose
 
 class DashboardView(BaseView):
-    is_index = True
     name = "Home"
 
     @expose("/", methods=["GET", "HEAD"])
