@@ -175,8 +175,8 @@ class StockService:
 
                         conversion_multiplier = conversion.multiplier_to_base
 
-                        document_line.base_quantity = absolute_base_quantity
-                        document_line.entered_quantity = (
+                    document_line.base_quantity = absolute_base_quantity
+                    document_line.entered_quantity = (
                         absolute_base_quantity / conversion_multiplier
                         )
             
