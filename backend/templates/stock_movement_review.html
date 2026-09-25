@@ -76,7 +76,8 @@
                             <th>Delta</th>
                             <th>Source</th>
                             <th>Destination</th>
-                            <th>Running Balance</th>
+                            <th>Qty issued/received</th>
+                            <th>Balance</th>
                             <th>Recorded By</th>
                             <th>Remarks</th>
                             <th>Actions</th>
@@ -86,10 +87,10 @@
                         {% for movement in movements %}
                             <tr>
                                 <td>{{ movement.movement_date }}</td>
-                                <td>{{ movement.movement_type }}</td>
-                                <td>{{ movement.quantity_delta }}</td>
+                                <td>{{ movement.movement_type | string }}</td>
                                 <td>{{ movement.source_party or "-" }}</td>
                                 <td>{{ movement.destination_party or "-" }}</td>
+                                <td>{{ movement.quantity_delta }}</td>
                                 <td>{{ movement.running_balance or "-" }}</td>
                                 <td>{{ movement.recorder.first_name }} {{ movement.recorder.last_name }}
 </td>
