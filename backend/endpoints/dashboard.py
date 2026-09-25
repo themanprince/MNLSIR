@@ -13,7 +13,7 @@ class DashboardView(BaseView):
         return is_logged_in(request)
 
 
-    @expose("/", methods=["GET", "HEAD"])
+    @expose("/dashboard", methods=["GET", "HEAD"])
     async def index_page(self, request):
         
         return await self.templates.TemplateResponse(
