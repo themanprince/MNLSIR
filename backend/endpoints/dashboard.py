@@ -1,4 +1,7 @@
 from sqladmin import BaseView, expose
+from starlette.requests import Request
+from auth import is_logged_in
+
 
 class DashboardView(BaseView):
     name = "Home"
