@@ -1,3 +1,13 @@
+:root {
+	/*credit to gemini AI for color palette*/
+	--primary-accent: #8B2626;
+	--primary-text-and-headers: #111827;
+	--main-bg: #F9FAFB;
+	--card-and-section-bg: #FFFFFF;
+	--border-and-muted-text: #6B7280;
+}
+
+
 .p-link-hover-underline:hover {
-    text-decoration: underline;
+	text-decoration: underline;
 }
