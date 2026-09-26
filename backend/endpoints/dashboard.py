@@ -18,6 +18,6 @@ class DashboardView(BaseView):
     async def index_page(self, request):
         
         return await self.templates.TemplateResponse(
-            "dashboard.html",
-            {"request": request}
+            request,
+            "dashboard.html"
         )

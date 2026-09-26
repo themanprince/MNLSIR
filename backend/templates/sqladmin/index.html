@@ -1,0 +1,76 @@
+{% extends "sqladmin/layout.html" %}
+
+
+{% block content %}
+
+<div class="bg-primary d-flex flex-column flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
+	<div>
+		<img src="{{ url_for('static', path='image/hero-img.png') }}" class="w-100 h-100"/>
+	</div>
+	<div>
+		<div class="w-50">
+			<img src="{{ url_for('static', path='image/mazuka-logo.png') }}" class="w-100 h-100"/>
+		</div>
+		
+		<div>
+			<h1 class="text-light">MNLSIR</h1>
+          <p class="text-light">Mazuka Nigeria Ltd. System of Integrated Records</p>
+		</div>
+	</div>
+	
+	<div class="w-auto d-flex flex-row justify-content-between">
+		<a class="btn rounded" style="background-color: var(--primary-accent)" href="tel:+2348037680836">Call Admin</a>
+		<a class="btn rounded" style="border: 1px solid var(--border-and-muted-text)" href="mailto:princeadigwe29@gmail.com">E-mail Admin</a>
+	</div>
+
+</div>
+
+     
+        <div class="mt-4 position-relative" style="z-index: 1;">
+            <a href="/admin/inventory" class="btn btn-light me-2">
+                View inventory
+            </a>
+            <a href="/admin/goods-receiving" class="btn btn-outline-light">
+                Record received goods
+            </a>
+            <a href="/admin/inventory" class="btn btn-primary">
+                Open inventory
+             </a>
+             <a href="/admin/goods-receiving" class="btn btn-success">
+                        Receive goods
+             </a>
+               
+             <a href="/admin/issue-stock" class="btn btn-warning">
+                        Issue stock
+              </a>
+
+              <a href="/admin/dispatch" class="btn btn-info">
+                        Dispatch stock
+              </a>
+              <a href="/admin/goods-received-ledger" class="btn btn-outline-success">
+                        Open ledger
+              </a>
+
+              <a href="/admin/stock-movement-review" class="btn btn-outline-primary">
+                        Review movements
+              </a>
+            
+              <a href="/admin/store/list" class="btn btn-outline-secondary">
+                        Manage stores
+              </a>
+              <a href="/admin/product/list" class="btn btn-outline-secondary">
+                        Manage products
+              </a>
+              <a href="/admin/unit/list" class="btn btn-outline-secondary">
+                        Manage units
+               </a>        
+    </div>
+
+    <div class="mnlsir-footer">
+        MNLSIR · Mazuka Nigeria Ltd. System of Integrated Records
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+
+{% endblock %}
