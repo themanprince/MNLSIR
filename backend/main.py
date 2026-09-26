@@ -10,7 +10,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from sqladmin import Admin
 from db import Base, engine, make_session
-from endpoints.dashboard import DashboardView
 from endpoints.product_admin import ProductAdmin
 from endpoints.unit_admin import UnitAdmin
 from endpoints.store_admin import StoreAdmin
@@ -66,7 +65,6 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 
 
-admin.add_view(DashboardView)
 admin.add_view(StoreAdmin)
 admin.add_view(UnitAdmin)
 admin.add_view(ProductAdmin)

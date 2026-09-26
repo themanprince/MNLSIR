@@ -2,25 +2,23 @@
 
 
 {% block content %}
+<div class="mt-1 w-50">
+	<img src="{{ url_for('static', path='image/hero-img.png') }}" class="w-100 h-100"/>
+</div>
 
-<div class="bg-primary d-flex flex-column flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
+<div class="bg-primary d-flex flex-column flex-md-row justify-content-between h-75 py-4 px-2">
 	<div>
-		<img src="{{ url_for('static', path='image/hero-img.png') }}" class="w-100 h-100"/>
+		<h1 class="text-light">MNLSIR</h1>
+       <p class="text-light">Mazuka Nigeria Ltd. System of Integrated Records</p>
 	</div>
-	<div>
-		<div class="w-50">
-			<img src="{{ url_for('static', path='image/mazuka-logo.png') }}" class="w-100 h-100"/>
-		</div>
 		
-		<div>
-			<h1 class="text-light">MNLSIR</h1>
-          <p class="text-light">Mazuka Nigeria Ltd. System of Integrated Records</p>
-		</div>
+	<div class="w-50">
+		<img src="{{ url_for('static', path='image/mazuka-logo.png') }}" class="w-100 h-100"/>
 	</div>
 	
 	<div class="w-auto d-flex flex-row justify-content-between">
-		<a class="btn rounded" style="background-color: var(--primary-accent)" href="tel:+2348037680836">Call Admin</a>
-		<a class="btn rounded" style="border: 1px solid var(--border-and-muted-text)" href="mailto:princeadigwe29@gmail.com">E-mail Admin</a>
+		<a class="btn btn-light rounded" href="tel:+2348037680836">Call Admin</a>
+		<a class="btn btn-secondary rounded" href="mailto:princeadigwe29@gmail.com">E-mail Admin</a>
 	</div>
 
 </div>
