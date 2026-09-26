@@ -1,15 +1,15 @@
 {% extends "sqladmin/layout.html" %}
 
 {% block content %}
-<link href={{ url_for("static", path="style.css") }} />
+<link rel="stylesheet" href="{{ url_for('static', path='style.css') }}"/>
 
-<div style="background-color: var(--main-bg)" class="d-flex flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
+<div style="background-color: var(--main-bg)" class="d-flex flex-column flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
 	<div>
-		<img src={{ url_for("static", path="image/hero-img.png") }} class="w-100 h-100"/>
+		<img src="{{ url_for('static', path='image/hero-img.png') }}" class="w-100 h-100"/>
 	</div>
 	<div>
-		<div class="w-25">
-			<img src={{ url_for("static", path="image/mazuka-logo.png") }} class="w-100 h-100"/>
+		<div class="w-50">
+			<img src="{{ url_for('static', path='image/mazuka-logo.png') }}" class="w-100 h-100"/>
 		</div>
 		
 		<div>
@@ -19,7 +19,7 @@
 	</div>
 	
 	<div class="w-25 d-flex flex-row justify-content-between">
-		<a class="btn rounded" style="background-color: var(--primary-accent)" href="+2348037680836">Call Admin</a>
+		<a class="btn rounded" style="background-color: var(--primary-accent)" href="tel:+2348037680836">Call Admin</a>
 		<a class="btn rounded" style="border: 1px solid var(--border-and-muted-text)" href="mailto:princeadigwe29@gmail.com">E-mail Admin</a>
 	</div>
 
