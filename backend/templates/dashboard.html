@@ -1,7 +1,11 @@
 {% extends "sqladmin/layout.html" %}
 
-{% block content %}
+
+{% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}"/>
+{% endblock %}
+
+{% block content %}
 
 <div style="background-color: var(--main-bg)" class="d-flex flex-column flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
 	<div>
@@ -18,7 +22,7 @@
 		</div>
 	</div>
 	
-	<div class="w-25 d-flex flex-row justify-content-between">
+	<div class="w-auto d-flex flex-row justify-content-between">
 		<a class="btn rounded" style="background-color: var(--primary-accent)" href="tel:+2348037680836">Call Admin</a>
 		<a class="btn rounded" style="border: 1px solid var(--border-and-muted-text)" href="mailto:princeadigwe29@gmail.com">E-mail Admin</a>
 	</div>
