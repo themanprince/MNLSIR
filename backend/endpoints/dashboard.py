@@ -4,6 +4,7 @@ from auth import is_logged_in
 
 
 class DashboardView(BaseView):
+    is_index = True
     name = "Home"
     
     def is_accessible(self, request: Request) -> bool:
@@ -17,6 +18,6 @@ class DashboardView(BaseView):
     async def index_page(self, request):
         
         return await self.templates.TemplateResponse(
-            request, 
             "dashboard.html",
+            {"request": request}
         )

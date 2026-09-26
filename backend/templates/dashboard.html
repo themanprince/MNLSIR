@@ -1,13 +1,9 @@
 {% extends "sqladmin/layout.html" %}
 
 
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', path='style.css') }}"/>
-{% endblock %}
-
 {% block content %}
 
-<div style="background-color: var(--main-bg)" class="d-flex flex-column flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
+<div class="bg-primary d-flex flex-column flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
 	<div>
 		<img src="{{ url_for('static', path='image/hero-img.png') }}" class="w-100 h-100"/>
 	</div>
