@@ -3,49 +3,68 @@
 
 {% block content %}
 
-<div class="w-50">
+<div class="w-25">
 	<img src="{{ url_for('static', path='image/mazuka-logo.png') }}" class="w-100 h-100"/>
 </div>
 	
 <div class="bg-primary d-flex flex-column flex-md-row justify-content-between h-75 py-4 px-2">
-	<div>
-		<h1 class="text-light">MNLSIR</h1>
-       <p class="text-light">Mazuka Nigeria Ltd. System of Integrated Records</p>
-	</div>
-
-	<div class="mt-1 w-50">
+	<div class="mt-1">
 		<img src="{{ url_for('static', path='image/hero-img.png') }}" class="w-100 h-100"/>
 	</div>
 	
-	<div class="w-auto d-flex flex-row justify-content-between">
-		<a class="btn btn-light rounded" href="tel:+2348037680836">Call Admin</a>
-		<a class="btn btn-secondary rounded" href="mailto:princeadigwe29@gmail.com">E-mail Admin</a>
-	</div>
+	<div class="text-center">
+		<h1 class="text-light">MNLSIR</h1>
+       <p class="text-light">Mazuka Nigeria Ltd. System of Integrated Records</p>
+		<div class="h-auto d-flex flex-row justify-content-start">
+			<a class="btn btn-light rounded" href="tel:+2348037680836">Call Admin</a>
+			<a class="mx-2 btn btn-secondary rounded" href="mailto:princeadigwe29@gmail.com">E-mail Admin</a>
+		</div>
 
+	</div>
+	
 </div>
+
+
+<div>
+	<a href="/admin/inventory" class="d-flex flex-row justify-content-between w-100 border-1 border-secondary py-2">
+		<div>
+			<span class="d-inline-block p-2 bg-info opacity-50 rounded"><i class="fa-regular fa-rectangle-list"></i></span>
+			<h2 class="d-inline-block mx-2">Inventory</h2>
+		</div>
+		
+		<i class="fa-solid fa-chevron-right"></i>
+	</a>
+	<a href="/admin/goods-receiving" class="d-flex flex-row justify-content-between w-100 border-1 border-secondary py-2">
+		<div>
+			<span class="d-inline-block p-2 bg-info opacity-50 rounded"><i class="fa-regular fa-rectangle-list"></i></span>
+			<h2 class="d-inline-block mx-2">Goods Receiving</h2>
+		</div>
+		
+		<i class="fa-solid fa-chevron-right"></i>
+	</a>
+	<a href="/admin/issue-stock" class="d-flex flex-row justify-content-between w-100 border-1 border-secondary py-2">
+		<div>
+			<span class="d-inline-block p-2 bg-info opacity-50 rounded"><i class="fa-regular fa-rectangle-list"></i></span>
+			<h2 class="d-inline-block mx-2">Issue Stock</h2>
+		</div>
+		
+		<i class="fa-solid fa-chevron-right"></i>
+	</a>
+	<a href="/admin/dispatch" class="d-flex flex-row justify-content-between w-100 border-1 border-secondary py-2">
+		<div>
+			<span class="d-inline-block p-2 bg-info opacity-50 rounded"><i class="fa-regular fa-rectangle-list"></i></span>
+			<h2 class="d-inline-block mx-2">Dispatch Stock</h2>
+		</div>
+		
+		<i class="fa-solid fa-chevron-right"></i>
+	</a>
+</div>
+
 
      
         <div class="mt-4 position-relative" style="z-index: 1;">
-            <a href="/admin/inventory" class="btn btn-light me-2">
-                View inventory
-            </a>
-            <a href="/admin/goods-receiving" class="btn btn-outline-light">
-                Record received goods
-            </a>
-            <a href="/admin/inventory" class="btn btn-primary">
-                Open inventory
-             </a>
-             <a href="/admin/goods-receiving" class="btn btn-success">
-                        Receive goods
-             </a>
-               
-             <a href="/admin/issue-stock" class="btn btn-warning">
-                        Issue stock
-              </a>
 
-              <a href="/admin/dispatch" class="btn btn-info">
-                        Dispatch stock
-              </a>
+             
               <a href="/admin/goods-received-ledger" class="btn btn-outline-success">
                         Open ledger
               </a>
@@ -68,8 +87,5 @@
     <div class="mnlsir-footer">
         MNLSIR · Mazuka Nigeria Ltd. System of Integrated Records
     </div>
-
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
 
 {% endblock %}
