@@ -5,7 +5,6 @@ from auth import is_logged_in
 
 class DashboardView(BaseView):
     name = "Home"
-    is_index = True
     
     def is_accessible(self, request: Request) -> bool:
         return is_logged_in(request)

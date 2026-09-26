@@ -1,15 +1,15 @@
 {% extends "sqladmin/layout.html" %}
 
 {% block content %}
-<link href={{ url_for("static", "style.css") }} />
+<link href={{ url_for("static", path="style.css") }} />
 
 <div style="background-color: var(--main-bg)" class="d-flex flex-md-row justify-content-between h-75 mt-3 py-4 px-2">
 	<div>
-		<img src={{ url_for("static", "image/hero-img.png") }} class="w-100 h-100"/>
+		<img src={{ url_for("static", path="image/hero-img.png") }} class="w-100 h-100"/>
 	</div>
 	<div>
 		<div class="w-25">
-			<img src={{ url_for("static", "image/mazuka-logo.png") }} class="w-100 h-100"/>
+			<img src={{ url_for("static", path="image/mazuka-logo.png") }} class="w-100 h-100"/>
 		</div>
 		
 		<div>
